@@ -1,0 +1,228 @@
+# 관리자 세팅 가이드
+
+팀 프로젝트 레포에 브랜치 전략 자동화를 도입하는 가이드입니다. **레포 admin 권한이 필요**합니다.
+
+총 3단계이며, Step 1~2는 필수, Step 3은 선택입니다.
+
+---
+
+## 사전 준비
+
+- 대상 GitHub repo의 **admin 권한**
+- 로컬에 클론된 대상 repo
+- 이 키트를 별도 폴더에 클론
+- **GitHub CLI (`gh`) 설치 + 인증** — Step 2-3에서 PR 생성에 필수
+
+```bash
+git clone https://github.com/Seongyul-Lee/branch-strategy-kit.git ~/branch-strategy-kit
+cd <your-team-repo>
+
+# gh 설치 확인 + 인증 (한 번만)
+gh --version || echo "→ https://cli.github.com/ 에서 설치"
+gh auth status || gh auth login
+```
+
+> 💡 `gh`가 아직 없다면 키트의 `./scripts/bootstrap.sh`로 일괄 설치 가능합니다 (Step 3 참고). 다만 Step 2-3에서 `gh pr create`를 호출하므로 그 전에 설치되어 있어야 합니다.
+
+---
+
+## Step 1 — GitHub 서버 설정 (5분)
+
+팀원이 추가 작업 없이 즉시 적용되는 서버 설정입니다.
+
+### 1-1. Branch Protection Rule
+
+GitHub repo → **Settings → Branches → Add branch protection rule**:
+
+- **Branch name pattern**: `main`
+- ☑ **Require a pull request before merging**
+  - ☑ Require approvals: `1` (**1인 repo면 이 체크박스를 OFF** — GitHub UI는 카운트 0을 허용하지 않습니다)
+  - ☑ Dismiss stale pull request approvals when new commits are pushed
+- ☑ **Require status checks to pass before merging**
+  - ☑ Require branches to be up to date before merging
+  - (Step 2 완료 후) 필수 체크에 `check-branch-name`, `validate-pr-title` 추가
+- ☑ **Require linear history**
+- ☑ **Require conversation resolution before merging**
+- ☑ **Do not allow bypassing the above settings**
+- ☐ Allow force pushes → **반드시 OFF**
+- ☐ Allow deletions → **반드시 OFF**
+
+→ **Save changes** 클릭.
+
+> ⚠️ **1인 repo 주의**
+>
+> GitHub는 PR 작성자의 self-approval을 허용하지 않습니다. 1인 저장소에서 `Require approvals`를 켜두면 본인이 만든 PR을 영원히 머지할 수 없습니다.
+> - ✅ 1인 repo → **`Require approvals` 체크박스 OFF** (카운트 0은 GitHub UI에서 입력 불가)
+> - ✅ 팀원이 추가되면 → 체크박스 ON + 카운트 `1` 이상
+>
+> 이미 막혔다면: Settings → Branches → main 규칙 Edit에서 `Require approvals` 체크를 해제한 뒤 저장.
+
+### 1-2. 머지 옵션 통일
+
+GitHub repo → **Settings → General → Pull Requests**:
+
+- ☑ **Allow squash merging** (only)
+  - Default commit message: **"Pull request title"** 권장
+- ☐ Allow merge commits → **OFF**
+- ☐ Allow rebase merging → **OFF**
+- ☑ **Always suggest updating pull request branches**
+- ☑ **Automatically delete head branches**
+
+### ✅ Step 1 검증
+
+main에 직접 push가 차단되는지 확인합니다:
+
+```bash
+git checkout main
+echo "test" >> README.md
+git commit -am "test direct push"
+git push
+```
+
+다음처럼 거부되면 성공:
+```
+remote: error: GH006: Protected branch update failed for refs/heads/main.
+ ! [remote rejected] main -> main (protected branch hook declined)
+```
+
+롤백 후 다음 단계로:
+```bash
+git reset --hard HEAD~1
+```
+
+---
+
+## Step 2 — CI 워크플로우 추가 (10분)
+
+PR 단계에서 잘못된 브랜치명·PR 제목을 자동 차단하는 workflow를 추가합니다.
+
+### 2-1. 파일 복사
+
+```bash
+cd <your-team-repo>
+mkdir -p .github/workflows
+
+cp ~/branch-strategy-kit/.github/workflows/branch-name-check.yml .github/workflows/
+cp ~/branch-strategy-kit/.github/workflows/pr-title-check.yml .github/workflows/
+cp ~/branch-strategy-kit/.github/workflows/stale-branches.yml .github/workflows/
+cp ~/branch-strategy-kit/.github/pull_request_template.md .github/
+
+# .gitattributes — Windows 팀원의 CRLF/LF "유령 modified" 방지
+# (이미 .gitattributes가 있다면 키트 버전의 규칙을 머지: *.sh, *.yml, *.yaml, *.bash → eol=lf)
+cp ~/branch-strategy-kit/.gitattributes .
+```
+
+> ⚠️ **`.gitattributes`를 누락하면 어떻게 되나**
+>
+> Windows의 `core.autocrlf=true`(기본값)와 충돌해 `.yml`/`.sh` 파일이 수정한 적 없는데도 `git status`에 `M`으로 뜨는 **"유령 modified"** 현상이 발생합니다. `git add` 후엔 사라지지만 다음 git 작업 때 또 등장하며, `git fb`가 "main 대비 커밋이 없습니다"로 실패할 수 있습니다. **반드시 함께 복사하세요.**
+
+### 2-2. (선택) 첫 2주 "경고만" 모드
+
+팀원이 새 규칙에 익숙해지도록 첫 2주는 경고만 표시하고 머지는 허용할 수 있습니다. 두 workflow의 검증 step에 `continue-on-error: true`를 추가합니다.
+
+**`.github/workflows/branch-name-check.yml`** — `run:` step에 추가:
+
+```yaml
+      - name: Validate branch name
+        continue-on-error: true   # ← 추가: 빨간 X가 떠도 머지 가능
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          ...
+```
+
+**`.github/workflows/pr-title-check.yml`** — 외부 액션 step에도 같은 들여쓰기로 추가:
+
+```yaml
+      - name: Validate PR title (Conventional Commits)
+        continue-on-error: true   # ← 추가
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          ...
+```
+
+2주 후 양쪽 workflow에서 `continue-on-error: true` 줄을 제거하여 차단 모드로 전환.
+
+### 2-3. 커밋 + 푸시 (PR로 도입)
+
+```bash
+git checkout -b chore/add-branch-strategy-automation
+git add .github/ .gitattributes
+git commit -m "chore: add branch strategy CI automation"
+git push -u origin chore/add-branch-strategy-automation
+gh pr create --title "chore: add branch strategy CI automation" --body "브랜치 전략 CI 자동화 도입"
+```
+
+### 2-4. Branch Protection에 status check 추가
+
+PR 머지 후 → **Settings → Branches → main 규칙 편집**:
+- **Require status checks** 섹션에서 `check-branch-name`, `validate-pr-title` 검색 후 추가
+- Save
+
+> 💡 workflow가 한 번도 실행되지 않은 상태에서는 검색 결과에 잡히지 않습니다. 2-3에서 만든 PR로 workflow가 1회 실행된 뒤 다시 검색하세요.
+
+### ✅ Step 2 검증
+
+잘못된 브랜치명과 PR 제목이 차단되는지 확인합니다:
+
+```bash
+git checkout -b WrongName
+git commit --allow-empty -m "test"
+git push -u origin WrongName
+gh pr create --title "Wrong Title" --body "test"
+```
+
+PR 페이지에서 다음 두 체크가 빨간 X로 실패해야 성공:
+- `check-branch-name`
+- `validate-pr-title`
+
+정리:
+```bash
+gh pr close --delete-branch
+```
+
+---
+
+## Step 3 — 로컬 훅·헬퍼 스크립트 추가 (선택, 5분)
+
+로컬에서 push 전에 브랜치명·커밋 메시지를 검증하고, 브랜치 생성·PR·정리를 자동화하는 스크립트를 추가합니다.
+
+### 3-1. 파일 복사
+
+```bash
+cd <your-team-repo>
+cp ~/branch-strategy-kit/lefthook.yml .
+cp -r ~/branch-strategy-kit/scripts .
+
+# 실행 권한 — working tree + git index 양쪽에 모두 기록해야
+# 다른 팀원이 clone했을 때 실행 권한이 보존됨
+chmod +x scripts/*.sh
+git update-index --chmod=+x scripts/*.sh
+```
+
+> ⚠️ **`git update-index --chmod=+x`를 빠뜨리면**
+>
+> Windows는 파일 시스템 실행 권한 개념이 없어서 `chmod +x` 효과가 git index에 자동 반영되지 않습니다. index에 권한을 기록해두지 않으면, 다른 팀원(특히 macOS/Linux)이 clone했을 때 `permission denied`로 스크립트 실행이 실패합니다.
+
+### 3-2. 커밋 + 푸시
+
+```bash
+git checkout -b chore/add-lefthook-and-scripts
+git add lefthook.yml scripts/
+git commit -m "chore: add lefthook and helper scripts"
+git push -u origin chore/add-lefthook-and-scripts
+gh pr create --fill
+```
+
+### ✅ Step 3 검증
+
+PR을 머지한 뒤, 팀원에게 [2-MEMBER_SETUP.md](./2-MEMBER_SETUP.md)를 공유하세요.
+
+---
+
+## 세팅 완료 후 할 일
+
+1. **팀원에게 [2-MEMBER_SETUP.md](./2-MEMBER_SETUP.md) 링크를 공유**하세요. 팀원은 이 문서만 읽으면 됩니다.
+2. 관리자 본인도 `./scripts/bootstrap.sh`를 실행하여 로컬 환경을 세팅하세요.
+3. `gh auth status`로 GitHub CLI 인증 여부를 확인하고, 미인증이면 `gh auth login`을 실행하세요.
+4. 일상 워크플로우는 [3-DAILY_WORKFLOW.md](./3-DAILY_WORKFLOW.md)를 참조하세요.
