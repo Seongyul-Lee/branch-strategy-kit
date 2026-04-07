@@ -30,6 +30,7 @@ branch-strategy-kit/
 ├── SCRIPTS_USAGE.md                # 헬퍼 스크립트 사용법
 ├── lefthook.yml                    # 클라이언트 측 git hook 설정
 ├── scripts/
+│   ├── bootstrap.sh                # 의존성(gh, lefthook) + lefthook 훅 1회 셋업
 │   ├── new-branch.sh               # 새 브랜치 생성 헬퍼
 │   ├── finish-branch.sh            # PR 생성 헬퍼
 │   └── cleanup-merged.sh           # 머지된 로컬 브랜치 정리
@@ -57,3 +58,5 @@ Tier 3: 클라이언트 보조 lefthook + scripts/ (팀원 1회 install)
 - bash (Linux/macOS 기본 / Windows는 Git Bash)
 - (선택) [GitHub CLI (`gh`)](https://cli.github.com/) — `finish-branch.sh` 사용 시
 - (선택) [lefthook](https://github.com/evilmartians/lefthook) — 클라이언트 훅 사용 시
+
+> 💡 위 선택 의존성은 [`./scripts/bootstrap.sh`](./SCRIPTS_USAGE.md#0-bootstrapsh--의존성-일괄-설치-1회-실행)로 환경에 맞춰 한 번에 설치할 수 있습니다.
