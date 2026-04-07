@@ -153,6 +153,16 @@ git push -u origin chore/add-branch-strategy-automation
 gh pr create --title "chore: add branch strategy CI automation" --body "브랜치 전략 CI 자동화 도입"
 ```
 
+PR 리뷰·**squash merge** 완료 후, 로컬을 최신화하고 작업 브랜치를 삭제합니다:
+
+```bash
+git checkout main
+git pull --ff-only
+git branch -D chore/add-branch-strategy-automation   # squash merge는 -d로 감지되지 않아 -D 사용
+```
+
+> 💡 원격 브랜치는 Step 1-2에서 켠 **Automatically delete head branches** 설정에 의해 자동으로 삭제됩니다. 로컬만 수동 정리하면 됩니다.
+
 ### 2-4. Branch Protection에 status check 추가
 
 PR 머지 후 → **Settings → Branches → main 규칙 편집**:
@@ -213,6 +223,16 @@ git commit -m "chore: add lefthook and helper scripts"
 git push -u origin chore/add-lefthook-and-scripts
 gh pr create --fill
 ```
+
+PR 리뷰·**squash merge** 완료 후, 로컬을 최신화하고 작업 브랜치를 삭제합니다:
+
+```bash
+git checkout main
+git pull --ff-only
+git branch -D chore/add-lefthook-and-scripts   # squash merge는 -d로 감지되지 않아 -D 사용
+```
+
+> 💡 이 PR 머지 이후에는 `./scripts/bootstrap.sh` 한 번 실행하면 `git cleanup` alias가 등록되어, **앞으로는 머지 후 정리를 `git cleanup` 한 줄로** 할 수 있습니다.
 
 ### ✅ Step 3 검증
 
