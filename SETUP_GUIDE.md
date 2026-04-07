@@ -22,11 +22,20 @@ cd <your-team-repo>
 
 ### 1-1. Branch Protection Rule
 
+> ⚠️ **1인 repo 주의사항 — Require approvals는 반드시 `0`**
+>
+> GitHub는 PR 작성자의 self-approval을 허용하지 않습니다. 1인 저장소(혼자 작업)에서 `Require approvals`를 `1` 이상으로 두면, 본인이 만든 PR을 **영원히 머지할 수 없습니다** (승인해줄 다른 사람이 없기 때문).
+>
+> - ✅ 1인 repo → `Require approvals: 0`
+> - ✅ 팀원이 추가되면 그때 `1` 이상으로 올리면 됩니다.
+>
+> 이미 `1` 이상으로 설정한 상태로 막혔다면: **Settings → Branches → main 규칙 Edit**에서 `Require approvals` 카운트를 `0`으로 내린 뒤 저장.
+
 GitHub repo → **Settings → Branches → Add branch protection rule**:
 
 - **Branch name pattern**: `main`
 - ☑ **Require a pull request before merging**
-  - ☑ Require approvals: `1` (1인 repo면 `0`)
+  - ☑ Require approvals: `1` (**1인 repo면 반드시 `0`** — 위 주의사항 참조)
   - ☑ Dismiss stale pull request approvals when new commits are pushed
 - ☑ **Require status checks to pass before merging**
   - ☑ Require branches to be up to date before merging
