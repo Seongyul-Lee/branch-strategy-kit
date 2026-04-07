@@ -30,4 +30,3 @@ jobs:
             PR 제목의 subject 부분은 소문자로 시작해야 합니다.
             예: "feat: add order router" (O)
                 "Feat: Add Order Router" (X)
-          wip: true
