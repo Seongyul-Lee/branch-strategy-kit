@@ -1,0 +1,66 @@
+# lefthook.yml — 클라이언트 측 git hook 설정
+#
+# 설치:
+#   1. lefthook 설치 (https://github.com/evilmartians/lefthook)
+#      - macOS: brew install lefthook
+#      - Windows: scoop install lefthook
+#      - Node 프로젝트: npm install -D lefthook
+#   2. 저장소에서 1회: lefthook install
+#
+# 검증되는 항목:
+#   - pre-push: 브랜치명 규칙 + main 직접 push 차단
+#   - commit-msg: Conventional Commits 형식
+
+pre-push:
+  parallel: true
+  commands:
+    no-direct-main-push:
+      run: |
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
+          echo "❌ $BRANCH 브랜치에 직접 push 금지."
+          echo "   새 브랜치를 만드세요: ./scripts/new-branch.sh <type> <name>"
+          exit 1
+        fi
+
+    branch-name-check:
+      run: |
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        # main/master는 위에서 차단되므로 여기서는 통과
+        if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
+          exit 0
+        fi
+        PATTERN="^(feat|fix|refactor|docs|research|data|chore)/[a-z0-9][a-z0-9-]*$"
+        if ! echo "$BRANCH" | grep -Eq "$PATTERN"; then
+          echo "❌ 브랜치명 '$BRANCH'이 규칙을 위반합니다."
+          echo "   올바른 형식: feat/my-feature, fix/bug-name, data/schema-v3 등"
+          echo "   허용 type: feat | fix | refactor | docs | research | data | chore"
+          echo "   브랜치 이름 변경: git branch -m <type>/<올바른-이름>"
+          exit 1
+        fi
+
+commit-msg:
+  commands:
+    conventional-commits:
+      run: |
+        FIRST_LINE=$(head -n1 "{1}")
+        # 빈 줄/주석은 통과
+        if [ -z "$FIRST_LINE" ]; then
+          exit 0
+        fi
+        # merge 커밋은 통과
+        case "$FIRST_LINE" in
+          "Merge "*|"Revert "*) exit 0 ;;
+        esac
+        PATTERN="^(feat|fix|refactor|docs|research|data|chore)(\(.+\))?!?: .+"
+        if ! echo "$FIRST_LINE" | grep -Eq "$PATTERN"; then
+          echo "❌ 커밋 메시지가 Conventional Commits 형식이 아닙니다."
+          echo "   첫 줄: $FIRST_LINE"
+          echo ""
+          echo "   올바른 예:"
+          echo "     feat: add order router"
+          echo "     fix(api): handle null response"
+          echo "     data: add orderbook v3 migration"
+          echo "     refactor!: breaking change"
+          exit 1
+        fi

@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Lefthook local
+.lefthook-local.yml
+lefthook-local.yml
+
+.claude/
+CLAUDE.md
