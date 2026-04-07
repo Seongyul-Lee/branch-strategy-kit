@@ -18,7 +18,7 @@ cd <your-team-repo>
 ## Phase 1 — GitHub 서버 측 강제 (5분)
 
 **효과**: 80% — 이것만 해도 main 직접 커밋이 막히고 머지 방식이 통일됩니다.
-**팀원 액션**: 0 (서버 설정만)
+**팀원 액션**: 0 (1회 서버 설정만)
 
 ### 1-1. Branch Protection Rule
 
@@ -50,7 +50,7 @@ GitHub repo → **Settings → General → Pull Requests**:
 - ☑ **Always suggest updating pull request branches**
 - ☑ **Automatically delete head branches** ← 머지 직후 원격 브랜치 자동 삭제
 
-### Phase 1 검증
+### Phase 1 main push 차단 검증
 
 ```bash
 cd <your-team-repo>
@@ -157,6 +157,19 @@ chmod +x scripts/*.sh
 
 ### 3-2. 팀원 안내 (각자 1회 실행)
 
+> 💡 **권장 — bootstrap 스크립트 사용**
+>
+> 아래 OS별 수동 설치 대신, 키트의 부트스트랩 스크립트로 한 번에 처리할 수 있습니다:
+>
+> ```bash
+> chmod +x scripts/bootstrap.sh
+> ./scripts/bootstrap.sh
+> ```
+>
+> 환경(OS + 패키지 매니저)을 자동 감지하여 `gh`, `lefthook` 설치 + `lefthook install`까지 한 번에 수행합니다. 자세한 동작은 [SCRIPTS_USAGE.md §0](./SCRIPTS_USAGE.md#0-bootstrapsh--의존성-일괄-설치-1회-실행) 참조.
+>
+> 아래 수동 단계는 부트스트랩이 자동 설치를 지원하지 않는 환경(예: Linux apt)이거나 직접 설치를 관리하고 싶을 때 사용합니다.
+
 **Linux/macOS**:
 ```bash
 brew install lefthook    # macOS
@@ -166,7 +179,7 @@ brew install lefthook    # macOS
 **Windows**:
 ```powershell
 scoop install lefthook
-# 또는 winget install evilmartians.Lefthook
+# 또는 winget install evilmartians.lefthook
 ```
 
 **Node 프로젝트**:
@@ -210,7 +223,7 @@ git push
 
 bash 스크립트(`scripts/*.sh`)는 다음 환경에서 실행됩니다:
 
-- **Git Bash** (Git for Windows에 기본 포함, 대부분의 Windows 개발자가 이미 보유)
+- **Git Bash** (Git for Windows에 기본 포함)
 - **WSL** (Windows Subsystem for Linux)
 
 Git Bash 사용 권장:
