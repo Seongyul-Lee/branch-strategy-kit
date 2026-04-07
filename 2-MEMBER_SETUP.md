@@ -20,11 +20,25 @@
 
 ## 온보딩 (1회)
 
-### 1. 레포 클론
+### 1. 레포 준비
+
+팀 repo의 로컬 상태에 따라 둘 중 하나를 수행합니다.
+
+**a. 로컬에 아직 없다면** — 클론:
 
 ```bash
-git clone <repo-url>
-cd <repo-name>
+git clone <your-team-repo>
+cd <your-team-repo>
+```
+
+> 💡 `<your-team-repo>`는 팀 repo의 원격 URL입니다 (예: `https://github.com/myorg/myrepo.git`). `git clone`은 URL 끝의 이름으로 디렉터리를 만들어주므로 생성된 폴더로 `cd` 하세요.
+
+**b. 이미 로컬에 있다면** — main 최신화:
+
+```bash
+cd <your-team-repo>
+git checkout main
+git pull origin main
 ```
 
 ### 2. bootstrap 실행
