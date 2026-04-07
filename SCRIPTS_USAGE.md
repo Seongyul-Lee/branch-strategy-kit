@@ -261,7 +261,7 @@ $ ./scripts/finish-branch.sh    # 커밋되지 않은 변경 있음
 ## 3. `cleanup-merged.sh` — 머지된 로컬 브랜치 정리
 
 ### 한 줄 요약
-원격에 머지(squash merge 포함)된 로컬 브랜치들을 일괄 삭제합니다.
+원격에 머지(squash merge 포함)된 로컬 브랜치들을 일괄 삭제합니다. 세 가지 신호(git merged / origin gone / GitHub PR MERGED)를 조합해 GitHub의 auto-delete가 동작하지 않은 케이스까지 처리합니다.
 
 ### Usage
 ```bash
@@ -276,6 +276,7 @@ $ ./scripts/finish-branch.sh    # 커밋되지 않은 변경 있음
 $ ./scripts/cleanup-merged.sh
 🔍 main 브랜치 최신화 중...
 🔍 원격 추적 정보 정리 중 (git fetch -p)...
+🔍 GitHub PR 상태 확인 중 (gh)...
 
 다음 브랜치들이 삭제됩니다:
   feat/order-router
@@ -283,37 +284,48 @@ $ ./scripts/cleanup-merged.sh
   data/schema-v3
 
 진행하시겠습니까? [y/N]: y
-✅ feat/order-router 삭제 완료
-✅ fix/websocket-reconnect 삭제 완료
-✅ data/schema-v3 삭제 완료
+✅ feat/order-router 삭제 완료 (merged)
+   🌐 원격 브랜치도 삭제: origin/fix/websocket-reconnect
+✅ fix/websocket-reconnect 삭제 완료 (PR merged on GitHub)
+✅ data/schema-v3 삭제 완료 (gone from remote)
 ```
+
+### 정리 대상을 고르는 3가지 신호
+
+로컬 브랜치가 **아래 셋 중 하나라도 만족**하면 삭제 후보가 됩니다:
+
+| # | 신호 | 감지 방법 | 커버하는 상황 |
+|---|---|---|---|
+| 1 | `merged` | `git branch --merged main` | 일반 merge commit으로 main에 흡수된 경우 |
+| 2 | `gone from remote` | `git branch -vv`에서 `: gone]` 마커 | squash merge + GitHub auto-delete가 **정상 동작**한 경우 |
+| 3 | `PR merged on GitHub` | `gh pr list --state merged` 결과와 로컬 브랜치의 교집합 | squash merge + auto-delete가 **미동작**한 경우 (원격 브랜치가 살아 있음) |
+
+3번 신호는 `gh` CLI가 설치되어 있고 `gh auth login` 된 상태일 때만 동작합니다. 미설치/미인증이면 경고 후 1)+2)로만 동작하므로 스크립트는 어쨌든 실행됩니다 (hard dependency 아님).
+
+3번 신호로 잡힌 브랜치는 **원격 브랜치도 함께 `git push origin --delete`로 삭제**합니다 — auto-delete가 왜 미동작했는지와 무관하게 상태를 수렴시키기 위함입니다. 원격 삭제에 실패해도(네트워크/권한 등) 로컬 삭제는 계속 진행됩니다.
 
 ### 동작 단계
 
 1. `git checkout main` → `git pull`
 2. `git fetch -p` (원격에서 삭제된 브랜치의 추적 정보 정리)
-3. 머지된 로컬 브랜치 목록 수집 (main 제외)
+3. 위 3가지 신호로 삭제 후보 수집, 합쳐서 중복 제거
 4. 삭제 대상이 없으면 종료
 5. 목록을 사용자에게 보여주고 확인 프롬프트 (`y/N`)
-6. 확인 시 일괄 삭제, 거부 시 종료
-
-### Squash merge 대응
-
-GitHub의 squash merge는 원본 브랜치 커밋이 main에 직접 머지되지 않아 `git branch --merged`로는 감지되지 않을 수 있습니다. 이 경우 다음 대안을 사용하세요:
-
-```bash
-# 원격에서 이미 삭제된 브랜치를 추적하던 로컬 브랜치 일괄 삭제
-git fetch -p
-git branch -vv | awk '/: gone]/{print $1}' | xargs -r git branch -D
-```
-
-이 패턴은 `cleanup-merged.sh` 내부에 추가 단계로 포함되어 있습니다.
+6. 확인 시 신호별 분기로 일괄 삭제
+   - `merged`: `-d` 시도 → 실패 시 `-D`
+   - `PR merged on GitHub`: 원격 먼저 삭제 + 로컬 `-D`
+   - `gone from remote`: 로컬 `-D`
 
 ### 에러 케이스
 
 ```bash
 $ ./scripts/cleanup-merged.sh    # 삭제할 브랜치 없음
 ✅ 정리할 머지된 브랜치가 없습니다.
+
+$ ./scripts/cleanup-merged.sh    # gh 미설치 환경
+🔍 원격 추적 정보 정리 중 (git fetch -p)...
+⚠️  gh CLI 미설치 또는 미인증 — PR 상태 검사를 건너뜁니다.
+   (gh CLI를 설치하면 auto-delete가 동작하지 않은 머지된 브랜치도 정리됩니다)
 ```
 
 ---
