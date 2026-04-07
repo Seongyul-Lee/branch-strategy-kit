@@ -23,6 +23,7 @@ STATUS_GH="missing"
 STATUS_LEFTHOOK="missing"
 STATUS_HOOKS="missing"
 STATUS_ALIASES="missing"
+STATUS_GITATTRIBUTES="missing"
 
 # Git alias 이름 → 실행 명령 매핑 (name=command)
 # 모두 `!bash ./scripts/*.sh` 형태로 repo top level 기준 상대 경로 사용.
@@ -215,6 +216,57 @@ ensure_lefthook_hooks() {
 }
 
 # ----------------------------------------------------------------------------
+# .gitattributes 점검 (CRLF/LF 유령 modified 방지)
+# ----------------------------------------------------------------------------
+# Windows의 core.autocrlf=true 와 .gitattributes 부재가 결합하면
+# 키트의 .sh/.yml 파일이 수정한 적 없는데도 git status에 'M'으로 뜨는
+# 유령 modified 현상이 발생한다 (SETUP_GUIDE.md 트러블슈팅 참고).
+# 강제 차단이 아닌 advisory warning — 종료 코드에 영향 없음.
+
+check_gitattributes() {
+  if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    STATUS_GITATTRIBUTES="skipped-no-git"
+    return 0
+  fi
+
+  echo "🔍 .gitattributes 점검 중..."
+
+  if [[ ! -f .gitattributes ]]; then
+    STATUS_GITATTRIBUTES="not-found"
+    echo "⚠️  .gitattributes 파일이 없습니다."
+    echo "   Windows 팀원에게 .yml/.sh 파일이 '유령 modified'로 뜨는 문제가 발생할 수 있습니다."
+    echo "   해결: 키트의 .gitattributes를 복사하세요 (SETUP_GUIDE.md Phase 2-1)."
+    return 0
+  fi
+
+  # 핵심 규칙: *.sh, *.yml, *.yaml, *.bash 에 eol=lf 가 모두 있어야 함.
+  # eol=lf 가 적용된 패턴(첫 칼럼)을 모아 fixed-string 정확 일치로 검증한다.
+  # (regex 메타문자 escape 이슈를 피하기 위함)
+  local lf_patterns
+  lf_patterns=$(grep -E 'eol=lf' .gitattributes 2>/dev/null | awk '{print $1}' || true)
+
+  local missing_rules=()
+  local pattern
+  for pattern in '*.sh' '*.yml' '*.yaml' '*.bash'; do
+    if ! printf '%s\n' "$lf_patterns" | grep -Fxq -- "$pattern"; then
+      missing_rules+=("$pattern")
+    fi
+  done
+
+  if [[ ${#missing_rules[@]} -gt 0 ]]; then
+    STATUS_GITATTRIBUTES="incomplete"
+    echo "⚠️  .gitattributes에 다음 규칙이 누락되었습니다: ${missing_rules[*]}"
+    echo "   각 패턴에 'eol=lf'가 적용되어야 Windows에서 유령 modified가 방지됩니다."
+    echo "   참고: SETUP_GUIDE.md 트러블슈팅 'CRLF 관련 에러'"
+    return 0
+  fi
+
+  STATUS_GITATTRIBUTES="ok"
+  echo "✅ .gitattributes: 핵심 LF 규칙 OK"
+  return 0
+}
+
+# ----------------------------------------------------------------------------
 # Git aliases 설치 (.git/config 의 [alias] 섹션)
 # ----------------------------------------------------------------------------
 
@@ -263,6 +315,9 @@ format_status() {
     skipped-no-lefthook) echo "⏭  lefthook 미설치로 건너뜀" ;;
     skipped-no-git)     echo "⏭  git repo가 아니라서 건너뜀" ;;
     failed)             echo "❌ 실패" ;;
+    ok)                 echo "✅ OK" ;;
+    incomplete)         echo "⚠️  핵심 규칙 누락 (위 경고 참고)" ;;
+    not-found)          echo "⚠️  파일 없음 (위 경고 참고)" ;;
     missing)            echo "—" ;;
     *)                  echo "$1" ;;
   esac
@@ -273,10 +328,11 @@ print_summary() {
   echo "============================================================"
   echo "📋 부트스트랩 결과"
   echo "============================================================"
-  printf "  %-10s %s\n" "gh"       "$(format_status "$STATUS_GH")"
-  printf "  %-10s %s\n" "lefthook" "$(format_status "$STATUS_LEFTHOOK")"
-  printf "  %-10s %s\n" "hooks"    "$(format_status "$STATUS_HOOKS")"
-  printf "  %-10s %s\n" "aliases"  "$(format_status "$STATUS_ALIASES")"
+  printf "  %-14s %s\n" "gh"             "$(format_status "$STATUS_GH")"
+  printf "  %-14s %s\n" "lefthook"       "$(format_status "$STATUS_LEFTHOOK")"
+  printf "  %-14s %s\n" "hooks"          "$(format_status "$STATUS_HOOKS")"
+  printf "  %-14s %s\n" "aliases"        "$(format_status "$STATUS_ALIASES")"
+  printf "  %-14s %s\n" "gitattributes"  "$(format_status "$STATUS_GITATTRIBUTES")"
   echo "============================================================"
   echo ""
 
@@ -362,6 +418,9 @@ main() {
   echo ""
 
   ensure_lefthook_hooks || true
+  echo ""
+
+  check_gitattributes || true
   echo ""
 
   ensure_git_aliases || true

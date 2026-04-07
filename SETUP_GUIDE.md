@@ -95,7 +95,15 @@ cp ~/branch-strategy-kit/.github/workflows/branch-name-check.yml .github/workflo
 cp ~/branch-strategy-kit/.github/workflows/pr-title-check.yml .github/workflows/
 cp ~/branch-strategy-kit/.github/workflows/stale-branches.yml .github/workflows/
 cp ~/branch-strategy-kit/.github/pull_request_template.md .github/
+
+# .gitattributes — Windows 팀원에게 발생하는 CRLF/LF "유령 modified" 방지
+# (이미 .gitattributes가 있다면 키트 버전을 머지: *.sh, *.yml, *.yaml, *.bash → eol=lf)
+cp ~/branch-strategy-kit/.gitattributes .
 ```
+
+> ⚠️ **`.gitattributes`를 누락하면 어떻게 되나**
+>
+> Windows의 `core.autocrlf=true`(기본값)와 충돌해 `.yml`/`.sh` 파일이 수정한 적 없는데도 `git status`에 `M`으로 뜨는 "유령 modified" 현상이 발생합니다. `git add` 후엔 사라지지만 다음 git 작업 때 또 등장하므로, 키트를 도입하면 반드시 함께 복사하세요.
 
 ### 2-2. (선택) 첫 2주 "경고만" 모드
 
@@ -285,13 +293,27 @@ git update-index --chmod=+x scripts/*.sh
 ```
 로 git 자체에도 실행 권한을 기록하세요.
 
-### CRLF 관련 에러 (Windows)
+### CRLF 관련 에러 / 유령 modified 표시 (Windows)
 
-→ `.gitattributes`에 다음 추가:
-```
-*.sh text eol=lf
-```
-이미 커밋된 파일은 `git add --renormalize .` 후 재커밋.
+**증상**: `git status`에 수정한 적 없는 `.yml`/`.sh` 파일이 `M`으로 뜨고, `git add` 후엔 변경 없음으로 사라지지만 다음 git 작업(checkout, pull, hook 실행 등) 때 또 등장. 결과적으로 `git fb`가 "main 대비 커밋이 없습니다"로 실패.
+
+**원인**: Windows의 `core.autocrlf=true`(기본값)와 `.gitattributes` 부재의 충돌. 키트의 `.sh`/`.yml` 자산은 LF로 저장되어야 하는데(Linux GitHub Actions runner에서 실행), git이 working tree를 CRLF로 가정해서 불일치를 보고합니다.
+
+**해결**:
+
+1. 키트의 `.gitattributes` 복사 (Phase 2-1에 이미 포함되어 있어야 함):
+   ```bash
+   cp ~/branch-strategy-kit/.gitattributes .
+   ```
+   키트 버전은 `*.sh`, `*.yml`, `*.yaml`, `*.bash`에 `eol=lf`를 강제합니다.
+
+2. 이미 잘못된 상태로 커밋된 파일이 있다면 정규화:
+   ```bash
+   git add --renormalize .
+   git commit -m "chore: renormalize line endings"
+   ```
+
+`./scripts/bootstrap.sh`는 `.gitattributes` 누락 또는 핵심 규칙 누락을 감지해 경고를 출력합니다.
 
 ### cleanup-merged.sh가 머지된 브랜치를 못 잡음
 
