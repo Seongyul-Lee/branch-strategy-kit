@@ -94,9 +94,11 @@ gh auth login
 > lefthook의 `commit-msg` 훅이 커밋 메시지 형식을 자동 검증합니다. 다음 형식을 어기면 commit 자체가 차단됩니다:
 > ```
 > <type>: <설명>
-> # 예: feat: add order router
+> # 예: feat: basic enemy AI movement 구현
+> #     fix: door trigger 오류 수정
+> #     remove: unused asset 및 테스트 코드 삭제
 > ```
-> `<type>`은 `feat | fix | refactor | docs | research | data | chore` 중 하나여야 합니다. 자세한 규칙은 [3-DAILY_WORKFLOW.md §3 커밋 메시지 규칙](./3-DAILY_WORKFLOW.md#3-커밋-메시지-규칙) 참조.
+> `<type>`은 `feat | fix | refactor | docs | research | data | chore | remove` 중 하나. subject는 **한국어/영문/혼용 모두 허용** (첫 글자만 A-Z 대문자 금지). 자세한 규칙은 [3-DAILY_WORKFLOW.md §3 커밋 메시지 규칙](./3-DAILY_WORKFLOW.md#3-커밋-메시지-규칙) 참조.
 
 ---
 

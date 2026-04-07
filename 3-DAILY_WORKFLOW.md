@@ -32,13 +32,14 @@ git nb feat order-router
 ```
 $ git nb
 브랜치 type을 선택하세요 (↑↓ 이동, Enter 확정):
-  ▶ feat
-    fix
-    refactor
-    docs
-    research
-    data
-    chore
+  ▶ feat       신규 기능
+    fix        버그 수정 / hotfix
+    refactor   동작 변경 없는 리팩터
+    docs       문서만 변경
+    research   탐색·실험·리서치
+    data       DB 스키마 / 마이그레이션
+    chore      빌드/CI/설정 변경
+    remove     파일·기능 제거
 브랜치 이름을 입력하세요: order router
 ✅ 새 브랜치 생성: feat/order-router
 ```
@@ -62,11 +63,12 @@ git nb fix "WebSocket Reconnect"    # → fix/websocket-reconnect
 | `research/` | 탐색·실험·리서치 | `research/ofi-decay` |
 | `data/` | DB 스키마, 마이그레이션, fixture | `data/orderbook-schema-v3` |
 | `chore/` | 빌드/CI/설정 변경 | `chore/update-deps` |
+| `remove/` | 파일·기능 제거 | `remove/unused-assets` |
 
 **규칙:**
-- 소문자 + 하이픈만 사용 (`feat/my-feature` ✅ / `feat/MyFeature` ❌)
-- 한국어 금지 (URL/CLI 호환성)
+- **브랜치명**: 소문자 + 하이픈만 사용 (`feat/my-feature` ✅ / `feat/MyFeature` ❌). URL/CLI 호환성을 위해 한국어는 브랜치명에는 사용하지 않습니다.
 - 3~5단어 이내 권장
+- 커밋 메시지와 PR 제목의 **subject** 부분은 한국어 사용 가능 (§3 참조)
 
 > 이 규칙은 CI workflow(`branch-name-check.yml`)와 lefthook이 자동 강제합니다. 위반 시 push/PR 단계에서 차단됩니다.
 
@@ -74,20 +76,30 @@ git nb fix "WebSocket Reconnect"    # → fix/websocket-reconnect
 
 ## 3. 커밋 메시지 규칙
 
-**Conventional Commits** 형식을 따릅니다:
+**Conventional Commits** 형식을 따릅니다. subject 부분은 **한국어 사용 가능**합니다 (영어만 되는 기존 conventional-commits 관행과 다른, 이 키트의 결정).
 
 ```
 <type>: <설명>
 ```
 
-**예시:**
+**예시 (한글/영문/혼용 모두 허용):**
 
 ```bash
-git commit -m "feat: add order router"
-git commit -m "fix: resolve websocket reconnect issue"
-git commit -m "docs: update branch strategy guide"
-git commit -m "refactor: extract risk calculation module"
+# 영문 기술 용어 + 한국어 동사 (권장 스타일)
+git commit -m "feat: basic enemy AI movement 구현"
+git commit -m "fix: door trigger 오류 수정"
+git commit -m "refactor: stat component 구조 개선"
+git commit -m "data: enemy balance 테이블 추가"
+git commit -m "remove: unused asset 및 테스트 코드 삭제"
+
+# 순수 한국어도 가능
+git commit -m "docs: 브랜치 전략 가이드 업데이트"
+
+# 순수 영문도 가능 (다국적 팀 대응)
+git commit -m "fix: handle null response from orderbook API"
 ```
+
+**유일한 제약**: subject의 **첫 글자는 대문자(A-Z)가 아니어야** 합니다 (`pr-title-check.yml`의 `subjectPattern: ^[^A-Z].+$`). 한글·숫자·소문자·기호는 모두 OK.
 
 > lefthook의 `commit-msg` 훅이 형식을 자동 검증합니다. 위반 시 커밋이 차단됩니다.
 
@@ -99,15 +111,16 @@ git commit -m "refactor: extract risk calculation module"
 
 ```bash
 git add .
-git commit -m "feat: add order router"
+git commit -m "feat: order router 구현"
 git fb
 # → push + PR 생성 + PR URL 출력
 ```
 
 **PR 제목 규칙:**
-- Conventional Commits 형식 필수 (예: `feat: add order router`)
+- Conventional Commits 형식 필수 (예: `feat: order router 구현`)
 - PR 제목이 squash merge 후 main의 커밋 메시지가 됩니다
 - `pr-title-check.yml`이 자동 검증합니다
+- 한국어/혼용 subject 허용 — 첫 글자만 대문자(A-Z)가 아니면 됨
 
 > PR 본문이 잘못 채워졌다면: `gh pr edit <번호>`로 수정하거나 GitHub UI에서 직접 수정하세요.
 
@@ -192,6 +205,7 @@ git push origin <tag>
 | 하고 싶은 것 | 명령어 |
 |---|---|
 | 새 기능 시작 | `git nb feat my-feature` |
+| 파일·기능 제거 | `git nb remove unused-assets` |
 | 새 브랜치 (인터랙티브) | `git nb` |
 | PR 생성 | `git fb` |
 | 머지 후 정리 | `git cleanup` |

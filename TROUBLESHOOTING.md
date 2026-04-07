@@ -85,7 +85,7 @@ gh auth login
 ```bash
 cp ~/branch-strategy-kit/.gitattributes .
 git add .gitattributes
-git commit -m "chore: add gitattributes for CRLF normalization"
+git commit -m "chore: CRLF 정규화를 위한 gitattributes 추가"
 ```
 
 ---
@@ -98,7 +98,7 @@ git commit -m "chore: add gitattributes for CRLF normalization"
 ```bash
 cp ~/branch-strategy-kit/.gitattributes .
 git add .gitattributes
-git commit -m "chore: add missing eol=lf rules to gitattributes"
+git commit -m "chore: gitattributes에 누락된 eol=lf 규칙 추가"
 ```
 
 ---
@@ -196,7 +196,7 @@ gh auth login          # 필요 시 인증
 2. 이미 잘못된 상태로 커밋된 파일이 있다면 정규화:
    ```bash
    git add --renormalize .
-   git commit -m "chore: renormalize line endings"
+   git commit -m "chore: 줄바꿈 재정규화"
    ```
 
 > `bootstrap.sh`를 실행하면 `.gitattributes` 누락 또는 핵심 규칙 누락을 자동으로 감지하여 경고를 출력합니다.

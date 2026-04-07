@@ -148,9 +148,9 @@ cp ~/branch-strategy-kit/.gitattributes .
 ```bash
 git checkout -b chore/add-branch-strategy-automation
 git add .github/ .gitattributes
-git commit -m "chore: add branch strategy CI automation"
+git commit -m "chore: branch strategy CI automation 도입"
 git push -u origin chore/add-branch-strategy-automation
-gh pr create --title "chore: add branch strategy CI automation" --body "브랜치 전략 CI 자동화 도입"
+gh pr create --title "chore: branch strategy CI automation 도입" --body "브랜치 전략 CI 자동화 도입"
 ```
 
 PR 리뷰·**squash merge** 완료 후, 로컬을 최신화하고 작업 브랜치를 삭제합니다:
@@ -219,7 +219,7 @@ git update-index --chmod=+x scripts/*.sh
 ```bash
 git checkout -b chore/add-lefthook-and-scripts
 git add lefthook.yml scripts/
-git commit -m "chore: add lefthook and helper scripts"
+git commit -m "chore: lefthook 및 헬퍼 스크립트 추가"
 git push -u origin chore/add-lefthook-and-scripts
 gh pr create --fill
 ```
