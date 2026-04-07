@@ -39,23 +39,27 @@
 
 ### 헬퍼 스크립트 사용 (권장)
 
+`bootstrap.sh` 실행 후에는 짧은 **Git alias** (`git nb` / `git fb` / `git cleanup`)로 호출할 수 있습니다.
+
 ```bash
 # 1. 새 작업 시작
-./scripts/new-branch.sh feat order-router
-# 또는 ./scripts/new-branch.sh 만 실행 → 메뉴에서 type 선택 + 이름 입력
+git nb feat order-router
+# 또는 `git nb` 만 실행 → 메뉴에서 type 선택 + 이름 입력
 
 # 2. 코드 작성 + 커밋
 git add .
 git commit -m "feat: add order router"
 
 # 3. PR 생성
-./scripts/finish-branch.sh
+git fb
 
 # 4. GitHub UI에서 Squash & Merge 클릭 → 원격 브랜치 자동 삭제
 
 # 5. 로컬 정리
-./scripts/cleanup-merged.sh
+git cleanup
 ```
+
+alias가 등록되지 않은 환경에서는 동일한 순서로 `./scripts/new-branch.sh`, `./scripts/finish-branch.sh`, `./scripts/cleanup-merged.sh`를 호출하면 됩니다. 자세한 대응: [SCRIPTS_USAGE.md § 짧은 명령어 (Git aliases)](./SCRIPTS_USAGE.md#짧은-명령어-git-aliases)
 
 ### 헬퍼 스크립트 없이
 

@@ -20,11 +20,29 @@
 chmod +x scripts/*.sh
 ```
 
+## 짧은 명령어 (Git aliases)
+
+`bootstrap.sh`는 아래 4개의 Git alias를 `.git/config`에 자동 등록합니다. 등록 후에는 **repo 안 어느 디렉터리에서든** 다음과 같이 짧게 호출할 수 있습니다:
+
+| alias | 동일 명령 |
+|---|---|
+| `git nb <type> <name>` | `./scripts/new-branch.sh <type> <name>` |
+| `git nb` | `./scripts/new-branch.sh` (인터랙티브) |
+| `git fb` | `./scripts/finish-branch.sh` |
+| `git cleanup` | `./scripts/cleanup-merged.sh` |
+| `git bootstrap` | `./scripts/bootstrap.sh` |
+
+Git alias는 **repo top level에서 실행**되므로 `src/foo/` 같은 하위 디렉터리에서 `git nb feat xxx`를 호출해도 `./scripts/...`가 올바르게 해석됩니다. `.git/config`는 repo 단위 설정이라 이 repo 밖에서는 보이지 않습니다 — 사용자의 전역 git 환경을 오염시키지 않습니다.
+
+> `git cleanup` / `git bootstrap`은 긴 이름이지만 1일 1~2회 호출이라 단축 이득보다 명확성을 우선했습니다. `git nb` / `git fb`는 매일 여러 번 호출되므로 2글자로 줄였습니다.
+
+이후 이 문서의 Usage 예시는 `./scripts/xxx.sh` 형태를 기준으로 적지만, **위 alias로 그대로 치환 가능**합니다.
+
 ---
 
 ## 0. `bootstrap.sh` — 의존성 일괄 설치 (1회 실행)
 
-`gh`, `lefthook` 설치 + `lefthook install`까지 자동으로 처리합니다. **1회성 셋업 전용**입니다. idempotent하므로 여러 번 실행해도 안전합니다.
+`gh`, `lefthook` 설치 + `lefthook install` + **Git alias 4개 등록**(`git nb` / `git fb` / `git cleanup` / `git bootstrap`)을 한 번에 처리합니다. **1회성 셋업 전용**입니다. idempotent하므로 여러 번 실행해도 안전합니다.
 
 ### Usage
 ```bash
