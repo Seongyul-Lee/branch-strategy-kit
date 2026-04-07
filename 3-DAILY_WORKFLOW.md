@@ -7,7 +7,7 @@
 ## 한눈에 보는 흐름
 
 ```
-git nb  →  코딩  →  commit  →  git fb  →  GitHub에서 Squash Merge  →  git cleanup
+git nb  →  코딩  →  commit  →  git fb  →  GitHub에서 Squash Merge 혹은 reject/close  →  git cleanup
 ```
 
 ---
@@ -129,13 +129,23 @@ git fb
 ## 5. 코드 리뷰 & 머지
 
 1. GitHub PR 페이지에서 팀원에게 리뷰를 요청합니다.
-2. 리뷰어가 Approve하면 **Squash and merge** 버튼을 클릭합니다.
+2. 리뷰어가 Approve 판단 시, **Squash and merge** 버튼을 클릭합니다.
 3. 원격 브랜치는 `Automatically delete head branches` 설정에 의해 자동 삭제됩니다.
 
 **머지 규칙:**
 - **squash merge만 허용** (merge commit, rebase merge 금지)
 - **linear history 강제** (Branch Protection 설정)
 - rebase는 자기 브랜치 한정. main에 push된 커밋은 rebase 금지
+
+**PR Close 규칙 (중요):**
+
+- **PR을 close하는 책임은 리뷰어에게 있습니다.** PR 작성자는 자기 PR을 직접 close하지 않습니다.
+- **리뷰어가 PR을 reject한다면 원격 브랜치 삭제도 함께 진행해야 합니다.** 이는 필수 절차입니다.
+  - GitHub UI: PR 페이지 하단의 **Close pull request** 버튼 클릭 -> **Delete branch** 버튼도 반드시 클릭
+  - CLI: `gh pr close <번호> --delete-branch` (한 번에 처리)
+- 작성자는 **리뷰어가 close + 원격 삭제까지 마친 뒤** `git cleanup` 한 줄로 로컬 브랜치 정리.
+
+> 💡 **왜 작성자가 PR을 직접 close하지 않나**: PR의 결정(머지/거절)을 한 명(리뷰어)에게 일관되게 위임하면 작성자가 "이미 close된 PR을 다시 open하는" 혼란이 사라지고, 검토 이력이 깨끗해집니다. 또한 리뷰어의 원격 삭제를 규칙으로 고정하면 작성자는 **머지/거절 어느 쪽이든 `git cleanup` 하나면 충분**합니다.
 
 ---
 
@@ -144,12 +154,23 @@ git fb
 머지 후 로컬에 남아 있는 브랜치를 정리합니다.
 
 ```bash
-git cleanup                              # 모든 머지된 브랜치 정리
+git cleanup                              # 모든 머지된 브랜치 정리(중요)
+
 git cleanup --exclude feat/keep-this     # 특정 브랜치 제외
 git cleanup --exclude 'feat/wip-*'       # glob 패턴 제외 (반복 사용 가능)
 ```
 
 > ⚠️ `git cleanup`은 **머지 완료된 작업 브랜치만** 삭제합니다. PR이 없거나 OPEN 상태인 브랜치는 절대 건드리지 않습니다. main/master/develop도 보호됨.
+
+**PR이 거절(reject)된 경우도 동일:**
+
+§5의 "PR Close 규칙"에 따라 리뷰어가 PR을 reject할 때 **원격 브랜치까지 함께 삭제**합니다. 따라서 작성자는 머지/거절 어느 쪽이든 평소와 동일하게:
+
+```bash
+git cleanup
+```
+
+한 줄이면 끝납니다. `git fetch -p`가 사라진 원격 브랜치를 감지하고 `(gone from remote)` 사유로 자동 정리됩니다.
 
 **예시 출력 (검출 사유가 inline으로 표시됨):**
 
