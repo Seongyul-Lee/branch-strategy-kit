@@ -144,10 +144,14 @@ git fb
 머지 후 로컬에 남아 있는 브랜치를 정리합니다.
 
 ```bash
-git cleanup
+git cleanup                              # 모든 머지된 브랜치 정리
+git cleanup --exclude feat/keep-this     # 특정 브랜치 제외
+git cleanup --exclude 'feat/wip-*'       # glob 패턴 제외 (반복 사용 가능)
 ```
 
-**예시 출력:**
+> ⚠️ `git cleanup`은 **머지 완료된 작업 브랜치만** 삭제합니다. PR이 없거나 OPEN 상태인 브랜치는 절대 건드리지 않습니다. main/master/develop도 보호됨.
+
+**예시 출력 (검출 사유가 inline으로 표시됨):**
 
 ```
 🔍 main 브랜치 최신화 중...
@@ -155,21 +159,35 @@ git cleanup
 🔍 GitHub PR 상태 확인 중 (gh)...
 
 다음 브랜치들이 삭제됩니다:
-  feat/order-router
-  fix/websocket-reconnect
+  feat/order-router          (merged)
+  fix/websocket-reconnect    (PR merged on GitHub)
+  refactor/api-cleanup       (gone from remote)
 
 진행하시겠습니까? [y/N]: y
 ✅ feat/order-router 삭제 완료 (merged)
 ✅ fix/websocket-reconnect 삭제 완료 (PR merged on GitHub)
+✅ refactor/api-cleanup 삭제 완료 (gone from remote)
+```
+
+`--exclude`로 일부를 제외한 경우 별도 섹션으로 안내됩니다:
+
+```
+다음 브랜치들이 삭제됩니다:
+  feat/order-router    (merged)
+
+⏭  --exclude로 제외됨:
+     feat/keep-this
+
+진행하시겠습니까? [y/N]:
 ```
 
 **삭제 사유 태그:**
 
 | 태그 | 의미 |
 |---|---|
-| `(merged)` | 일반 merge commit으로 main에 흡수됨 |
+| `(merged)` | 일반 merge commit으로 main에 흡수됨 (`git branch --merged main` 으로 감지) |
 | `(gone from remote)` | 원격 브랜치가 사라진 신호. 일반적으로 PR squash merge + GitHub auto-delete head branches 설정이 동작한 결과 |
-| `(PR merged on GitHub)` | `gh pr list --state merged`로 감지. `gh` CLI 필수 |
+| `(PR merged on GitHub)` | `gh pr list --state merged`로 감지. `gh` CLI 필수. auto-delete가 동작하지 않은 케이스 보정 |
 
 > `gh` CLI가 미설치/미인증이면 `(merged)` + `(gone from remote)` 두 종류만 정리됩니다.
 
