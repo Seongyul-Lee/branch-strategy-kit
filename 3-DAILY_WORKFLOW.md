@@ -137,6 +137,16 @@ git fb
 - **linear history 강제** (Branch Protection 설정)
 - rebase는 자기 브랜치 한정. main에 push된 커밋은 rebase 금지
 
+**PR Close 규칙 (중요):**
+
+- **PR을 close하는 책임은 리뷰어에게 있습니다.** PR 작성자는 자기 PR을 직접 close하지 않습니다.
+- 리뷰어가 PR을 거절(reject)하기로 결정하면 다음 중 하나로 close합니다:
+  - GitHub UI: PR 페이지 하단의 **Close pull request** 버튼 (가능하면 close 시 **Delete branch** 버튼도 같이 클릭)
+  - CLI: `gh pr close <번호> --delete-branch` (원격 브랜치까지 한 번에 정리)
+- 작성자는 **리뷰어가 close + 원격 삭제까지 마친 뒤** 로컬 정리만 수행 → §6 참조.
+
+> 💡 **왜 작성자가 PR을 직접 close하지 않나**: PR의 운명(머지/거절)을 한 명(리뷰어)에게 일관되게 위임하면 작성자가 "이미 close된 PR을 다시 open하는" 같은 혼란이 사라지고, 검토 이력이 깨끗해집니다.
+
 ---
 
 ## 6. 정리하기 — `git cleanup`
@@ -150,6 +160,17 @@ git cleanup --exclude 'feat/wip-*'       # glob 패턴 제외 (반복 사용 가
 ```
 
 > ⚠️ `git cleanup`은 **머지 완료된 작업 브랜치만** 삭제합니다. PR이 없거나 OPEN 상태인 브랜치는 절대 건드리지 않습니다. main/master/develop도 보호됨.
+
+**PR이 거절(close without merge)된 경우:**
+
+§5의 "PR Close 규칙"에 따라 리뷰어가 `--delete-branch` 옵션과 함께 PR을 close했다면, 작성자는 평소와 동일하게 `git cleanup`만 실행하면 됩니다 — `git fetch -p`가 사라진 원격 브랜치를 감지하고 `(gone from remote)` 사유로 자동 정리합니다.
+
+리뷰어가 `--delete-branch` 없이 close해 원격 브랜치만 잔존한 경우 (드뭄), 작성자가 한 줄 추가:
+
+```bash
+git push origin --delete <branch-name>   # 원격 정리
+git cleanup                              # → (gone from remote)로 검출되어 로컬 삭제
+```
 
 **예시 출력 (검출 사유가 inline으로 표시됨):**
 

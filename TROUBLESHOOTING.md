@@ -118,6 +118,46 @@ git stash pop    # 필요 시
 
 ---
 
+### PR이 거절되어 close되었을 때 (close without merge)
+
+**상황:** 리뷰어가 PR을 머지하지 않고 close했습니다. 작성자는 로컬+원격에 남은 작업 브랜치를 정리해야 합니다.
+
+> 📌 **팀 규칙 (3-DAILY_WORKFLOW.md §5)**: PR을 close하는 책임은 **리뷰어**에게 있습니다. 작성자는 자기 PR을 직접 close하지 않으며, 리뷰어가 close + 원격 삭제까지 마친 뒤 로컬만 정리합니다.
+
+**해결:** 리뷰어가 어떻게 close했는지에 따라 두 가지:
+
+**A. 리뷰어가 `--delete-branch`와 함께 close (권장 흐름)**
+
+리뷰어가 GitHub UI의 "Close pull request" + "Delete branch" 또는 `gh pr close <번호> --delete-branch`를 사용한 경우. 작성자는 평소처럼:
+
+```bash
+git cleanup
+# → fetch -p가 사라진 원격 브랜치를 감지 → (gone from remote) 사유로 자동 삭제
+```
+
+**B. 리뷰어가 `--delete-branch` 없이 close (원격 브랜치 잔존)**
+
+작성자가 원격을 직접 정리한 뒤 cleanup:
+
+```bash
+git checkout main
+git pull --ff-only
+git push origin --delete <branch-name>   # 원격 정리
+git cleanup                              # → (gone from remote) 사유로 로컬 자동 삭제
+```
+
+또는 직접 로컬 삭제 (cleanup 우회):
+
+```bash
+git checkout main
+git push origin --delete <branch-name>
+git branch -D <branch-name>              # squash 미머지라 -D 필요
+```
+
+> 💡 **왜 작성자가 PR을 직접 close하지 않나**: 검토 이력의 일관성을 위함. 자세한 배경은 3-DAILY_WORKFLOW.md §5 "PR Close 규칙" 참조.
+
+---
+
 ### `finish-branch.sh`가 PR 본문을 잘못 채움
 
 **원인:** `finish-branch.sh`는 `gh pr create --fill-first`를 사용합니다 — **첫 번째 커밋 메시지**를 PR 제목/본문으로 자동 채움. 커밋이 여러 개라면 두 번째 이후 커밋의 의도가 누락될 수 있습니다.
