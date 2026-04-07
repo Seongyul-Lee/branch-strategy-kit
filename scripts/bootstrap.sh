@@ -220,7 +220,7 @@ ensure_lefthook_hooks() {
 # ----------------------------------------------------------------------------
 # Windows의 core.autocrlf=true 와 .gitattributes 부재가 결합하면
 # 키트의 .sh/.yml 파일이 수정한 적 없는데도 git status에 'M'으로 뜨는
-# 유령 modified 현상이 발생한다 (SETUP_GUIDE.md 트러블슈팅 참고).
+# 유령 modified 현상이 발생한다 (TROUBLESHOOTING.md 참고).
 # 강제 차단이 아닌 advisory warning — 종료 코드에 영향 없음.
 
 check_gitattributes() {
@@ -235,7 +235,7 @@ check_gitattributes() {
     STATUS_GITATTRIBUTES="not-found"
     echo "⚠️  .gitattributes 파일이 없습니다."
     echo "   Windows 팀원에게 .yml/.sh 파일이 '유령 modified'로 뜨는 문제가 발생할 수 있습니다."
-    echo "   해결: 키트의 .gitattributes를 복사하세요 (SETUP_GUIDE.md Phase 2-1)."
+    echo "   해결: 키트의 .gitattributes를 복사하세요 (1-ADMIN_SETUP.md Step 2-1)."
     return 0
   fi
 
@@ -257,7 +257,7 @@ check_gitattributes() {
     STATUS_GITATTRIBUTES="incomplete"
     echo "⚠️  .gitattributes에 다음 규칙이 누락되었습니다: ${missing_rules[*]}"
     echo "   각 패턴에 'eol=lf'가 적용되어야 Windows에서 유령 modified가 방지됩니다."
-    echo "   참고: SETUP_GUIDE.md 트러블슈팅 'CRLF 관련 에러'"
+    echo "   참고: TROUBLESHOOTING.md 'CRLF 관련 에러 / 유령 modified 표시 (Windows)'"
     return 0
   fi
 
