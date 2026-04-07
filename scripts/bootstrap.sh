@@ -22,6 +22,16 @@ ASSUME_YES=0
 STATUS_GH="missing"
 STATUS_LEFTHOOK="missing"
 STATUS_HOOKS="missing"
+STATUS_ALIASES="missing"
+
+# Git alias 이름 → 실행 명령 매핑 (name=command)
+# 모두 `!bash ./scripts/*.sh` 형태로 repo top level 기준 상대 경로 사용.
+GIT_ALIASES=(
+  "nb=!bash ./scripts/new-branch.sh"
+  "fb=!bash ./scripts/finish-branch.sh"
+  "cleanup=!bash ./scripts/cleanup-merged.sh"
+  "bootstrap=!bash ./scripts/bootstrap.sh"
+)
 
 # ----------------------------------------------------------------------------
 # 환경 감지
@@ -205,6 +215,41 @@ ensure_lefthook_hooks() {
 }
 
 # ----------------------------------------------------------------------------
+# Git aliases 설치 (.git/config 의 [alias] 섹션)
+# ----------------------------------------------------------------------------
+
+ensure_git_aliases() {
+  if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    STATUS_ALIASES="skipped-no-git"
+    echo "⚠️  현재 디렉터리가 git repo가 아니라서 alias를 설치하지 않습니다."
+    return 1
+  fi
+
+  echo "🔍 Git aliases 설치 중..."
+  local installed=0
+  local entry name cmd current
+  for entry in "${GIT_ALIASES[@]}"; do
+    name="${entry%%=*}"
+    cmd="${entry#*=}"
+    current=$(git config --local --get "alias.$name" 2>/dev/null || true)
+    if [[ "$current" == "$cmd" ]]; then
+      echo "   ✅ git $name: 이미 설치됨"
+    else
+      git config --local "alias.$name" "$cmd"
+      echo "   ✅ git $name: 설치 완료"
+      installed=$((installed + 1))
+    fi
+  done
+
+  if [[ $installed -gt 0 ]]; then
+    STATUS_ALIASES="installed"
+  else
+    STATUS_ALIASES="already"
+  fi
+  return 0
+}
+
+# ----------------------------------------------------------------------------
 # 결과 요약
 # ----------------------------------------------------------------------------
 
@@ -231,6 +276,7 @@ print_summary() {
   printf "  %-10s %s\n" "gh"       "$(format_status "$STATUS_GH")"
   printf "  %-10s %s\n" "lefthook" "$(format_status "$STATUS_LEFTHOOK")"
   printf "  %-10s %s\n" "hooks"    "$(format_status "$STATUS_HOOKS")"
+  printf "  %-10s %s\n" "aliases"  "$(format_status "$STATUS_ALIASES")"
   echo "============================================================"
   echo ""
 
@@ -265,7 +311,14 @@ print_summary() {
     echo "  - URL 안내를 받은 도구는 가이드대로 수동 설치 후 ./scripts/bootstrap.sh 를 다시 실행하세요."
   fi
   if [[ "$STATUS_HOOKS" == "installed" ]]; then
-    echo "  - 작업 시작: ./scripts/new-branch.sh <type> <name>"
+    echo "  - 작업 시작: git nb <type> <name>   (또는 ./scripts/new-branch.sh ...)"
+  fi
+  if [[ "$STATUS_ALIASES" == "installed" || "$STATUS_ALIASES" == "already" ]]; then
+    echo "  - 사용 가능한 Git alias:"
+    echo "      git nb <type> <name>   — 새 작업 브랜치"
+    echo "      git fb                 — PR 생성"
+    echo "      git cleanup            — 머지된 브랜치 정리"
+    echo "      git bootstrap          — 이 스크립트 재실행"
   fi
   echo ""
 }
@@ -309,6 +362,9 @@ main() {
   echo ""
 
   ensure_lefthook_hooks || true
+  echo ""
+
+  ensure_git_aliases || true
 
   print_summary
 
@@ -317,6 +373,7 @@ main() {
   case "$STATUS_GH"       in already|installed) ;; *) ok=0 ;; esac
   case "$STATUS_LEFTHOOK" in already|installed) ;; *) ok=0 ;; esac
   case "$STATUS_HOOKS"    in installed)         ;; *) ok=0 ;; esac
+  case "$STATUS_ALIASES"  in already|installed) ;; *) ok=0 ;; esac
   [[ "$ok" -eq 1 ]] && exit 0 || exit 1
 }
 

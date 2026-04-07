@@ -174,7 +174,7 @@ chmod +x scripts/*.sh
 > ./scripts/bootstrap.sh
 > ```
 >
-> 환경을 자동 감지해 `gh`, `lefthook` 설치 + `lefthook install`까지 한 번에 수행합니다. 자세한 동작: [SCRIPTS_USAGE.md §0](./SCRIPTS_USAGE.md#0-bootstrapsh--의존성-일괄-설치-1회-실행)
+> 환경을 자동 감지해 `gh`, `lefthook` 설치 + `lefthook install` + **Git alias 4개 등록** (`git nb` / `git fb` / `git cleanup` / `git bootstrap`)까지 한 번에 수행합니다. 자세한 동작: [SCRIPTS_USAGE.md §0](./SCRIPTS_USAGE.md#0-bootstrapsh--의존성-일괄-설치-1회-실행)
 >
 > 아래 수동 단계는 bootstrap이 자동 설치를 지원하지 않는 환경(예: apt)에서 사용하세요.
 
@@ -224,6 +224,22 @@ git push
 ```
 ❌ main 브랜치에 직접 push 금지. 새 브랜치를 만드세요.
 ```
+
+### 3-5. 검증 — Git alias 동작
+
+```bash
+git config --local --get-regexp '^alias\.(nb|fb|cleanup|bootstrap)$'
+```
+
+다음 4줄이 출력되면 성공:
+```
+alias.nb !bash ./scripts/new-branch.sh
+alias.fb !bash ./scripts/finish-branch.sh
+alias.cleanup !bash ./scripts/cleanup-merged.sh
+alias.bootstrap !bash ./scripts/bootstrap.sh
+```
+
+이후 데일리 워크플로우는 `git nb feat xxx` / `git fb` / `git cleanup`으로 짧게 호출할 수 있습니다.
 
 ---
 
