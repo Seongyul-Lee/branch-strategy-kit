@@ -63,8 +63,11 @@ echo "📤 원격에 push 중: $BRANCH"
 git push -u origin "$BRANCH"
 
 # PR 생성
+# --fill-first: 커밋이 여러 개일 때 첫 커밋 메시지를 PR 제목/본문으로 사용.
+# (--fill은 multi-commit PR에서 브랜치명을 Conventional Commits가 아닌 형식으로
+#  변환해 PR 제목 검증이 실패하는 버그가 있어 --fill-first로 통일한다.)
 echo "📝 PR 생성 중..."
-gh pr create --fill
+gh pr create --fill-first
 
 echo ""
 echo "✅ PR 생성 완료. 리뷰 후 GitHub UI에서 'Squash and merge' 버튼을 클릭하세요."
