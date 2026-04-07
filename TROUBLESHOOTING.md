@@ -118,25 +118,6 @@ git stash pop    # 필요 시
 
 ---
 
-### PR이 거절(reject)되어 close되었을 때
-
-**상황:** 리뷰어가 PR을 머지하지 않고 reject했습니다. 작성자는 로컬에 남은 작업 브랜치를 정리해야 합니다.
-
-> 📌 **팀 규칙 (3-DAILY_WORKFLOW.md §5)**: PR을 close하는 책임은 **리뷰어**에게 있고, **reject 시 원격 브랜치 삭제도 리뷰어가 함께 진행**합니다. 작성자는 자기 PR을 직접 close하지 않습니다.
-
-**해결:** 작성자는 평소처럼 한 줄만 실행하면 됩니다:
-
-```bash
-git cleanup
-# → fetch -p가 사라진 원격 브랜치를 감지 → (gone from remote) 사유로 로컬 자동 삭제
-```
-
-머지된 PR이든 reject된 PR이든 작성자 입장에서 cleanup 절차는 **완전히 동일**합니다 — 리뷰어가 원격 브랜치 삭제를 책임지므로 작성자는 케이스 분기를 신경 쓸 필요가 없습니다.
-
-> 💡 **왜 작성자가 PR을 직접 close하지 않나**: 검토 이력의 일관성을 위함. 자세한 배경은 3-DAILY_WORKFLOW.md §5 "PR Close 규칙" 참조.
-
----
-
 ### `finish-branch.sh`가 PR 본문을 잘못 채움
 
 **원인:** `finish-branch.sh`는 `gh pr create --fill-first`를 사용합니다 — **첫 번째 커밋 메시지**를 PR 제목/본문으로 자동 채움. 커밋이 여러 개라면 두 번째 이후 커밋의 의도가 누락될 수 있습니다.
