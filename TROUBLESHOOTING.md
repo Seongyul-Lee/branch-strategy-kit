@@ -4,6 +4,15 @@
 
 ---
 
+## 주의사항
+
+- **새로 `git clone`한 직후에는 반드시 `./scripts/bootstrap.sh`를 다시 실행하세요.**
+  Git alias(`git nb`/`fb`/`cleanup`/`bootstrap`)와 lefthook 훅은 **`.git/config`와 `.git/hooks/`에만** 등록되는데, 이 두 경로는 clone 시 새로 생성되므로 **이전 레포에서 bootstrap을 한 적이 있어도 새 clone에는 이어지지 않습니다**. 같은 레포를 두 번째·세 번째 clone할 때도 동일합니다.
+- `bootstrap.sh`는 **idempotent(멱등)** 합니다. 이미 설치·등록된 항목은 건너뛰므로 **몇 번을 실행해도 안전**하고 부작용이 없습니다. "혹시 뭔가 빠졌나?" 싶을 때 그냥 다시 돌리면 됩니다.
+- bootstrap을 건너뛴 상태에서 `git nb`/`git fb`가 "command not found" 또는 `git: 'nb' is not a git command`로 실패한다면, 높은 확률로 이 케이스입니다. `./scripts/bootstrap.sh`를 한 번 실행하면 복구됩니다.
+
+---
+
 ## 세팅 관련
 
 ### "Required status check is expected" 에러로 PR 머지 불가
