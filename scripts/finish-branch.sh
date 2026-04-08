@@ -35,7 +35,7 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 if [[ "$BRANCH" == "main" ]]; then
   echo "❌ main 브랜치에서는 실행할 수 없습니다."
-  echo "   먼저 작업 브랜치로 전환하세요: ./scripts/new-branch.sh <type> <name>"
+  echo "   먼저 작업 브랜치로 전환하세요: git nb <type> <name>"
   exit 1
 fi
 

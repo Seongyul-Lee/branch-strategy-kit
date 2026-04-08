@@ -401,7 +401,7 @@ print_summary() {
     echo "  - URL 안내를 받은 도구는 가이드대로 수동 설치 후 ./scripts/bootstrap.sh 를 다시 실행하세요."
   fi
   if [[ "$STATUS_HOOKS" == "installed" ]]; then
-    echo "  - 작업 시작: git nb <type> <name>   (또는 ./scripts/new-branch.sh ...)"
+    echo "  - 작업 시작: git nb로 브랜치 생성"
   fi
   if [[ "$STATUS_ALIASES" == "installed" || "$STATUS_ALIASES" == "already" ]]; then
     echo "  - 사용 가능한 Git alias:"

@@ -18,7 +18,7 @@ case "$MODE" in
   no-main-push)
     if [[ "$BRANCH" == "main" || "$BRANCH" == "master" ]]; then
       echo "❌ $BRANCH 브랜치에 직접 push 금지."
-      echo "   새 브랜치를 만드세요: ./scripts/new-branch.sh <type> <name>"
+      echo "   새 브랜치를 만드세요: git nb <type> <name>"
       exit 1
     fi
     ;;
