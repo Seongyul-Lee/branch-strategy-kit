@@ -163,4 +163,4 @@ git checkout -b "$BRANCH"
 
 echo ""
 echo "✅ 새 브랜치 생성: $BRANCH"
-echo "   작업 후: ./scripts/finish-branch.sh"
+echo "   작업 후: git fb"
