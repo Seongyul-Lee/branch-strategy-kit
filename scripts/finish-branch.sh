@@ -77,8 +77,20 @@ git push -u origin "$BRANCH"
 
 if [[ $NO_PR -eq 1 ]]; then
   echo ""
-  echo "✅ push 완료 (--no-pr: PR 생성을 건너뛰었습니다)."
-  echo "   나중에 PR을 만들려면: gh pr create --fill-first"
+  echo "push 완료✅  (--no-pr: PR 생성을 건너뛰었습니다)."
+  echo "   나중에 PR을 만들려면: git fb"
+  exit 0
+fi
+
+# 이미 열린 PR이 있는지 확인
+EXISTING_PR_URL=$(gh pr view "$BRANCH" --json url --jq .url 2>/dev/null || true)
+
+if [[ -n "$EXISTING_PR_URL" ]]; then
+  EXISTING_PR_NUM=$(gh pr view "$BRANCH" --json number --jq .number 2>/dev/null || true)
+  echo ""
+  echo "기존 #${EXISTING_PR_NUM} PR에 push 완료✅  (이미 열린 PR이 있어 새로 생성하지 않았습니다.)"
+  echo "   PR: $EXISTING_PR_URL"
+  echo "   머지 후 로컬 정리: git cleanup"
   exit 0
 fi
 
@@ -90,5 +102,5 @@ echo "📝 PR 생성 중..."
 gh pr create --fill-first
 
 echo ""
-echo "✅ PR 생성 완료. 리뷰 후 GitHub UI에서 'Squash and merge' 버튼을 클릭하세요."
-echo "   머지 후 로컬 정리: ./scripts/cleanup-merged.sh"
+echo "PR 생성 완료✅  리뷰 후 GitHub에서 'Squash and merge' 버튼을 클릭하세요."
+echo "   머지 후 로컬 정리: git cleanup"
