@@ -75,6 +75,8 @@ gh auth login
 ```
 대화형 프롬프트를 따라 인증하세요. 자세한 절차는 [2-MEMBER_SETUP.md](./2-MEMBER_SETUP.md#3-github-cli-인증)를 참조하세요.
 
+> 💡 gh 없이 push만 하고 싶다면: `git fb --no-pr`
+
 ---
 
 ### bootstrap.sh에서 ".gitattributes 파일이 없습니다" 경고
