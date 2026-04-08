@@ -124,6 +124,12 @@ git fb
 
 > PR 본문이 잘못 채워졌다면: `gh pr edit <번호>`로 수정하거나 GitHub UI에서 직접 수정하세요.
 
+**push만 하고 PR은 나중에 만들고 싶을 때:**
+
+```bash
+git fb --no-pr   # push만 수행
+```
+
 ---
 
 ## 5. 코드 리뷰 & 머지
