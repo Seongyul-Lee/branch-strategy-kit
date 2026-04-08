@@ -90,5 +90,5 @@ echo "📝 PR 생성 중..."
 gh pr create --fill-first
 
 echo ""
-echo "✅ PR 생성 완료. 리뷰 후 GitHub UI에서 'Squash and merge' 버튼을 클릭하세요."
-echo "   머지 후 로컬 정리: ./scripts/cleanup-merged.sh"
+echo "PR 생성 완료✅  리뷰 후 GitHub에서 'Squash and merge' 버튼을 클릭하세요."
+echo "   머지 후 로컬 정리: git cleanup"
