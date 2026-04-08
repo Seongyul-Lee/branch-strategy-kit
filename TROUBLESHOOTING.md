@@ -177,6 +177,21 @@ gh auth login          # 필요 시 인증
 ./scripts/cleanup-merged.sh   # 다시 실행
 ```
 
+### `git branch-move`가 번호 입력 모드로만 동작함 (fzf 권장)
+
+**원인:** `fzf`가 설치되어 있지 않습니다. 키트의 필수 의존성은 아니므로 fallback으로 번호 입력 모드가 동작합니다.
+
+**해결 (선택):**
+```bash
+# macOS
+brew install fzf
+# Windows
+winget install fzf
+# Debian/Ubuntu
+sudo apt install fzf
+```
+설치 후 새 셸에서 `git branch-move` 실행하면 자동으로 fzf UI가 사용됩니다.
+
 ---
 
 ## Windows 관련

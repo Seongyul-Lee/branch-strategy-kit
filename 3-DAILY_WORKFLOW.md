@@ -220,7 +220,36 @@ git cleanup
 
 ---
 
-## 7. 릴리스 태깅
+## 7. 브랜치 전환 — `git branch-move`
+
+여러 작업 브랜치를 운영 중일 때, 인터랙티브 메뉴로 로컬 브랜치를 선택해 checkout합니다.
+
+```bash
+git branch-move
+```
+
+- 최근 커밋 시각 내림차순으로 정렬됩니다.
+- 현재 브랜치는 `*` 마커와 색상으로 강조됩니다.
+- **`fzf`가 설치되어 있으면** 화살표 + Enter로 선택 (권장).
+- **없으면** 번호 입력 fallback으로 동작 (의존성 0).
+- 커밋되지 않은 변경이 있으면 거부됩니다 — 먼저 커밋/스태시 후 사용하세요.
+
+```
+$ git branch-move
+로컬 브랜치 (최근 커밋 순):
+   1) * feat/order-router         2 hours ago    feat: 라우터 초기 구현
+   2)   fix/websocket-reconnect   1 day ago      fix: 재연결 백오프 추가
+   3)   chore/fb-no-pr-message    3 days ago     chore: fb 메시지 개선
+
+이동할 브랜치 번호 [1-3, q=취소]: 2
+✅ 'fix/websocket-reconnect' 브랜치로 이동했습니다.
+```
+
+> 💡 fzf 설치: macOS `brew install fzf`, Windows `winget install fzf`. 키트 필수 의존성은 아닙니다.
+
+---
+
+## 8. 릴리스 태깅
 
 릴리스 브랜치를 만들지 않습니다. **Git tag**로 표시합니다.
 
@@ -235,7 +264,7 @@ git push origin <tag>
 
 ---
 
-## 8. 브랜치 수명이 길어질 것 같으면
+## 9. 브랜치 수명이 길어질 것 같으면
 
 **더 작은 단위로 쪼갭니다:**
 
@@ -254,6 +283,7 @@ git push origin <tag>
 | 새 브랜치 (인터랙티브) | `git nb` |
 | PR 생성 | `git fb` |
 | 머지 후 정리 | `git cleanup` |
+| 브랜치 전환 | `git branch-move` |
 | 릴리스 태깅 | `git tag v1.2.3 && git push origin v1.2.3` |
 
 **alias ↔ 스크립트 대응표:**
@@ -263,6 +293,7 @@ git push origin <tag>
 | `git nb <type> <n>` | `./scripts/new-branch.sh <type> <n>` |
 | `git fb` | `./scripts/finish-branch.sh` |
 | `git cleanup` | `./scripts/cleanup-merged.sh` |
+| `git branch-move` | `./scripts/branch-move.sh` |
 | `git bootstrap` | `./scripts/bootstrap.sh` |
 
 > alias가 등록되지 않은 환경에서는 스크립트를 직접 호출하세요.
