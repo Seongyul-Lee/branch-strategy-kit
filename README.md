@@ -11,6 +11,14 @@
 
 이 저장소는 자체 키트 규칙을 따릅니다(self-dogfooding)
 
+> ⚠️ **실행 환경 제약**
+>
+> 이 키트의 모든 명령어(`bootstrap.sh`, `git nb/fb/cleanup`, 문서 내 bash 블록)는 아래 환경에서만 정상 동작합니다. **혼용 시 동작을 보장하지 않습니다.**
+>
+> - **macOS / Linux** → 기본 **터미널** (bash/zsh)
+> - **Windows** → **Git Bash** ([Git for Windows](https://git-scm.com/download/win)에 기본 포함). CMD/PowerShell에서는 동작하지 않습니다.
+>   - 단, **`gh` 설치와 `gh auth login`만** PowerShell에서 실행하고(→ [1-ADMIN_SETUP.md](./1-ADMIN_SETUP.md) 참조), **이후 모든 작업은 Git Bash**에서 진행하세요.
+
 ---
 
 ## 이 키트가 필요한 사람

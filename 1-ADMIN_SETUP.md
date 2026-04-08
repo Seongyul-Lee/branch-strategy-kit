@@ -24,6 +24,44 @@ gh auth status || gh auth login
 
 > 💡 `gh`가 아직 없다면 키트의 `./scripts/bootstrap.sh`로 일괄 설치 가능합니다 (Step 3 참고). 다만 Step 2-3에서 `gh pr create`를 호출하므로 그 전에 설치되어 있어야 합니다.
 
+### OS별 `gh` 설치 가이드
+
+**macOS** (터미널에서 실행, Homebrew):
+```bash
+brew install gh
+```
+
+**Windows** — **`gh` 설치 + `gh auth login`까지만 PowerShell에서 실행**하고, 이후 모든 작업(Step 1~3 및 데일리 워크플로우)은 **Git Bash**에서 진행하세요. 셋 중 택1:
+```powershell
+# winget (Windows 10/11 기본 탑재)
+winget install --id GitHub.cli
+
+# Scoop
+scoop install gh
+
+# Chocolatey
+choco install gh
+```
+> 설치 후 **Git Bash를 새로 열어야** `gh`가 PATH에 잡힙니다.
+
+**Linux**:
+```bash
+# Debian/Ubuntu
+sudo apt install gh
+
+# Fedora/RHEL
+sudo dnf install gh
+
+# Arch
+sudo pacman -S github-cli
+```
+> apt 저장소 버전이 오래된 경우 공식 설치 방법: <https://github.com/cli/cli/blob/trunk/docs/install_linux.md>
+
+설치 후 인증:
+```bash
+gh auth login
+```
+
 ---
 
 ## Step 1 — GitHub 서버 설정 (5분)
@@ -116,34 +154,7 @@ cp ~/branch-strategy-kit/.gitattributes .
 >
 > Windows의 `core.autocrlf=true`(기본값)와 충돌해 `.yml`/`.sh` 파일이 수정한 적 없는데도 `git status`에 `M`으로 뜨는 **"유령 modified"** 현상이 발생합니다. `git add` 후엔 사라지지만 다음 git 작업 때 또 등장하며, `git fb`가 "main 대비 커밋이 없습니다"로 실패할 수 있습니다. **반드시 함께 복사하세요.**
 
-### 2-2. (선택, 2-3으로 건너뛰기 가능) 첫 2주 "경고만" 모드
-
-팀원이 새 규칙에 익숙해지도록 첫 2주는 경고만 표시하고 머지는 허용할 수 있습니다. 두 workflow의 검증 step에 `continue-on-error: true`를 추가합니다.
-
-**`.github/workflows/branch-name-check.yml`** — `run:` step에 추가:
-
-```yaml
-      - name: Validate branch name
-        continue-on-error: true   # ← 추가: 빨간 X가 떠도 머지 가능
-        env:
-          BRANCH: ${{ github.head_ref }}
-        run: |
-          ...
-```
-
-**`.github/workflows/pr-title-check.yml`** — 외부 액션 step에도 같은 들여쓰기로 추가:
-
-```yaml
-      - name: Validate PR title (Conventional Commits)
-        continue-on-error: true   # ← 추가
-        uses: amannn/action-semantic-pull-request@v5
-        env:
-          ...
-```
-
-2주 후 양쪽 workflow에서 `continue-on-error: true` 줄을 제거하여 차단 모드로 전환.
-
-### 2-3. 커밋 + 푸시 (PR로 도입)
+### 2-2. 커밋 + 푸시 (PR로 도입)
 
 ```bash
 git checkout -b chore/add-branch-strategy-automation
@@ -163,13 +174,13 @@ git branch -D chore/add-branch-strategy-automation   # squash merge는 -d로 감
 
 > 💡 원격 브랜치는 Step 1-2에서 켠 **Automatically delete head branches** 설정에 의해 자동으로 삭제됩니다. 로컬만 수동 정리하면 됩니다.
 
-### 2-4. Branch Protection에 status check 추가
+### 2-3. Branch Protection에 status check 추가
 
 PR 머지 후 → **Settings → Branches → main 규칙 편집**:
 - **Require status checks** 섹션에서 `check-branch-name`, `validate-pr-title` 검색 후 추가
 - Save
 
-> 💡 workflow가 한 번도 실행되지 않은 상태에서는 검색 결과에 잡히지 않습니다. 2-3에서 만든 PR로 workflow가 1회 실행된 뒤 다시 검색하세요.
+> 💡 workflow가 한 번도 실행되지 않은 상태에서는 검색 결과에 잡히지 않습니다. 2-2에서 만든 PR로 workflow가 1회 실행된 뒤 다시 검색하세요.
 
 ### ✅ Step 2 검증
 

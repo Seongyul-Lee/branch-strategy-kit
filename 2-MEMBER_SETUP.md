@@ -2,11 +2,13 @@
 
 프로젝트에 합류한 팀원이 **딱 한 번** 실행하면 되는 가이드입니다. 5분이면 끝납니다.
 
+> ⚠️ **실행 환경**: Windows는 **Git Bash**에서, macOS는 **터미널**에서 진행하세요. (CMD/PowerShell ❌)
+
 ---
 
-## 관리자가 이미 해둔 것
+## 팀 프로젝트 관리자가 이미 해둔 것
 
-걱정하지 마세요. 다음은 이미 설정되어 있습니다:
+아래는 이미 팀 프로젝트에 설정되어 있습니다:
 
 - ✅ main 브랜치 보호 (직접 push 차단)
 - ✅ CI 자동 검증 (브랜치명·PR 제목 규칙 위반 시 차단)
@@ -24,16 +26,16 @@
 
 팀 repo의 로컬 상태에 따라 둘 중 하나를 수행합니다.
 
-**a. 로컬에 아직 없다면** — 클론:
+**a. 로컬에 팀 레포가 아직 없다면** — 클론:
 
 ```bash
-git clone <your-team-repo>
+git clone <your-team-repo-url>
 cd <your-team-repo>
 ```
 
-> 💡 `<your-team-repo>`는 팀 repo의 원격 URL입니다 (예: `https://github.com/myorg/myrepo.git`). `git clone`은 URL 끝의 이름으로 디렉터리를 만들어주므로 생성된 폴더로 `cd` 하세요.
+> 💡 `<your-team-repo-url>`는 팀 repo의 원격 URL입니다 (예: `https://github.com/myorg/myrepo.git`).
 
-**b. 이미 로컬에 있다면** — main 최신화:
+**b. 이미 로컬에 팀 레포가 있다면** — main 최신화:
 
 ```bash
 cd <your-team-repo>
@@ -83,8 +85,6 @@ gh auth login
 
 브라우저가 열리면 GitHub에 로그인하고 인증을 승인하세요.
 
-> ⚠️ `gh auth login`을 하지 않으면 `git fb` (PR 생성)와 `git cleanup` (PR 상태 조회)이 동작하지 않습니다.
-
 ### 4. 완료!
 
 세팅이 끝났습니다. 이제 [3-DAILY_WORKFLOW.md](./3-DAILY_WORKFLOW.md)를 읽고 작업을 시작하세요.
@@ -104,7 +104,7 @@ gh auth login
 
 ## Windows 사용자
 
-bash 스크립트(`scripts/*.sh`)는 다음 환경에서만 동작합니다:
+bash 스크립트(실전 명령어)는 다음 환경에서만 동작합니다:
 
 - **Git Bash** (Git for Windows에 기본 포함) — [다운로드](https://git-scm.com/download/win)
 - **WSL** (Windows Subsystem for Linux)
