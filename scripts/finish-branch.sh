@@ -77,8 +77,8 @@ git push -u origin "$BRANCH"
 
 if [[ $NO_PR -eq 1 ]]; then
   echo ""
-  echo "✅ push 완료 (--no-pr: PR 생성을 건너뛰었습니다)."
-  echo "   나중에 PR을 만들려면: gh pr create --fill-first"
+  echo "push 완료✅  (--no-pr: PR 생성을 건너뛰었습니다)."
+  echo "   나중에 PR을 만들려면: git fb"
   exit 0
 fi
 
