@@ -82,11 +82,14 @@ if [[ $NO_PR -eq 1 ]]; then
   exit 0
 fi
 
-# 이미 열린 PR이 있는지 확인
-EXISTING_PR_URL=$(gh pr view "$BRANCH" --json url --jq .url 2>/dev/null || true)
+# 이미 열린 PR(state=open)이 있는지 확인
+# gh pr view 는 closed/merged PR도 반환하므로 gh pr list --state open 으로 한정
+EXISTING_PR_URL=$(gh pr list --head "$BRANCH" --state open --limit 1 \
+  --json url --jq '.[0].url // empty' 2>/dev/null || true)
 
 if [[ -n "$EXISTING_PR_URL" ]]; then
-  EXISTING_PR_NUM=$(gh pr view "$BRANCH" --json number --jq .number 2>/dev/null || true)
+  EXISTING_PR_NUM=$(gh pr list --head "$BRANCH" --state open --limit 1 \
+    --json number --jq '.[0].number // empty' 2>/dev/null || true)
   echo ""
   echo "기존 #${EXISTING_PR_NUM} PR에 push 완료✅  (이미 열린 PR이 있어 새로 생성하지 않았습니다.)"
   echo "   PR: $EXISTING_PR_URL"

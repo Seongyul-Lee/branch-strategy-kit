@@ -32,6 +32,7 @@ GIT_ALIASES=(
   "nb=!bash ./scripts/new-branch.sh"
   "fb=!bash ./scripts/finish-branch.sh"
   "cleanup=!bash ./scripts/cleanup-merged.sh"
+  "branch-move=!bash ./scripts/branch-move.sh"
   "bootstrap=!bash ./scripts/bootstrap.sh"
 )
 
@@ -407,6 +408,7 @@ print_summary() {
     echo "      git nb <type> <name>   — 새 작업 브랜치"
     echo "      git fb                 — PR 생성"
     echo "      git cleanup            — 머지된 브랜치 정리"
+    echo "      git branch-move        — 로컬 브랜치 인터랙티브 전환"
     echo "      git bootstrap          — 이 스크립트 재실행"
   fi
   echo ""
