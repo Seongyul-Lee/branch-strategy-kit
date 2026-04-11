@@ -763,9 +763,9 @@ PR #7 → #6 재제출은 워크플로우의 정상 동작 사례다. 잘못된 
 3. `git tag v1.x.y` + `git push --tags`
 4. GitHub Release 생성, CHANGELOG 해당 섹션 본문으로 사용
 
-### 20.5 CHANGELOG 정책 `[계획]`
+### 20.5 CHANGELOG 정책
 
-현재 `CHANGELOG.md` 부재. v1.1.0 준비 시 [Keep a Changelog](https://keepachangelog.com) 형식으로 신설 예정. v1.0.0 이후 첫 릴리스 시 소급 작성.
+`CHANGELOG.md`는 [Keep a Changelog](https://keepachangelog.com) 형식을 따른다. v1.0.1 준비 과정에서 신설되었으며, v1.0.0 이후의 변경분은 `[Unreleased]` 섹션에 소급 정리되어 있다. 차기 릴리스 시 `[Unreleased]`의 내용을 새 버전 섹션(`[1.x.y] - YYYY-MM-DD`)으로 이동한다.
 
 ### 20.6 Deprecation 정책
 
