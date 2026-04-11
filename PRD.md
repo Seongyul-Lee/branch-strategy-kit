@@ -288,7 +288,7 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 이 킷을 다른 프로젝트에 적용하려면:
 
 1. **파일 복사**: `scripts/`, `.github/workflows/`, `lefthook.yml`, `.gitattributes`, `.github/pull_request_template.md`를 대상 레포에 복사
-2. **실행 권한**: `git update-index --chmod=+x scripts/*.sh` (Windows에서 필수)
+2. **실행 권한**: `git add --chmod=+x scripts/*.sh`로 인덱스에 실행 권한(100755) 기록 (Windows에서 필수)
 3. **서버 설정**: GitHub branch protection rule 수동 구성 (`1-ADMIN_SETUP.md` Step 1)
 4. **팀원 온보딩**: 각 팀원이 `./scripts/bootstrap.sh` 실행
 
@@ -573,7 +573,7 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 | 3 | bootstrap | `gh` 설치 후 새 터미널 필요 (PATH 미갱신) | 중 |
 | 4 | gh 인증 | `gh auth status` 실패 시 `git fb`가 PR 생성 불가 | 중 |
 | 5 | Windows | `core.autocrlf=true` + `.gitattributes` 부재 시 유령 modified | 상 |
-| 6 | Windows | Git Bash에서 `permission denied` (`chmod +x` + `git update-index --chmod=+x` 필요) | 상 |
+| 6 | Windows | Git Bash에서 `permission denied` (`chmod +x` + `git add --chmod=+x` 필요) | 상 |
 | 7 | finish-branch | 다중 커밋 PR에서 `--fill-first`만 사용해 본문 불완전 | 중 |
 | 8 | cleanup-merged | `gh` 미인증 시 PR 머지 신호 검출 생략 (silent skip) | 중 |
 
