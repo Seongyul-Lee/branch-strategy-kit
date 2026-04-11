@@ -82,8 +82,8 @@ select_type_interactive() {
       local rest=""
       read -rsn2 -t 0.05 rest || true
       case "$rest" in
-        '[A' | 'OA') ((selected = (selected - 1 + n) % n)) ;;
-        '[B' | 'OB') ((selected = (selected + 1) % n)) ;;
+        '[A' | 'OA') selected=$(( (selected - 1 + n) % n )) ;;
+        '[B' | 'OB') selected=$(( (selected + 1) % n )) ;;
       esac
     fi
   done
