@@ -40,7 +40,6 @@ extract_pattern_types() {
 compare_types() {
   local canonical_list="$1"
   local target_list="$2"
-  local label="$3"
 
   local missing extra
   missing=$(comm -23 <(echo "$canonical_list") <(echo "$target_list"))
@@ -77,7 +76,8 @@ echo ""
 
 # ── Tier A: 필수 검증 ──
 
-echo "── Tier A: 필수 검증 ──"
+TIER_A_EXPECTED=7
+echo "── Tier A: 필수 검증 ($TIER_A_EXPECTED곳) ──"
 
 check_tier_a() {
   local file="$1"
@@ -87,32 +87,29 @@ check_tier_a() {
   TIER_A_TOTAL=$((TIER_A_TOTAL + 1))
 
   if [[ ! -f "$ROOT_DIR/$file" ]]; then
-    echo "⏭️  [$TIER_A_TOTAL] $file — SKIP (파일 없음)"
+    echo "⏭️  [$TIER_A_TOTAL/$TIER_A_EXPECTED] $file — SKIP (파일 없음)"
+    TIER_A_TOTAL=$((TIER_A_TOTAL - 1))
     return 0
   fi
 
   if [[ -z "$types" ]]; then
-    echo "❌ [$TIER_A_TOTAL] $file — FAIL (파서가 빈 결과 반환)"
+    echo "❌ [$TIER_A_TOTAL/$TIER_A_EXPECTED] $file — FAIL (파서가 빈 결과 반환)"
     TIER_A_FAIL=$((TIER_A_FAIL + 1))
     return 0
   fi
 
-  if compare_types "$CANONICAL_TYPES" "$types" "$file"; then
-    echo "✅ [$TIER_A_TOTAL] $file"
+  if compare_types "$CANONICAL_TYPES" "$types"; then
+    echo "✅ [$TIER_A_TOTAL/$TIER_A_EXPECTED] $file"
     TIER_A_PASS=$((TIER_A_PASS + 1))
   else
-    echo "❌ [$TIER_A_TOTAL] $file"
+    echo "❌ [$TIER_A_TOTAL/$TIER_A_EXPECTED] $file"
     TIER_A_FAIL=$((TIER_A_FAIL + 1))
   fi
 }
 
 # 1. scripts/check-commit-msg.sh — regex PATTERN
 extract_commit_msg_types() {
-  grep 'PATTERN=' "$ROOT_DIR/scripts/check-commit-msg.sh" \
-    | sed 's/.*\^(\([^)]*\)).*/\1/' \
-    | tr '|' '\n' \
-    | tr -d '\r' \
-    | sort
+  extract_pattern_types "$ROOT_DIR/scripts/check-commit-msg.sh"
 }
 
 # 2. scripts/finish-branch.sh — regex PATTERN
@@ -181,7 +178,8 @@ echo ""
 
 # ── Tier B: 가이드 문서 검증 ──
 
-echo "── Tier B: 가이드 문서 검증 ──"
+TIER_B_EXPECTED=4
+echo "── Tier B: 가이드 문서 검증 ($TIER_B_EXPECTED곳) ──"
 
 check_tier_b() {
   local file="$1"
@@ -189,7 +187,8 @@ check_tier_b() {
   TIER_B_TOTAL=$((TIER_B_TOTAL + 1))
 
   if [[ ! -f "$ROOT_DIR/$file" ]]; then
-    echo "⏭️  [$TIER_B_TOTAL] $file — SKIP (파일 없음)"
+    echo "⏭️  [$TIER_B_TOTAL/$TIER_B_EXPECTED] $file — SKIP (파일 없음)"
+    TIER_B_TOTAL=$((TIER_B_TOTAL - 1))
     return 0
   fi
 
@@ -205,10 +204,10 @@ check_tier_b() {
   done <<< "$CANONICAL_TYPES"
 
   if [[ $found -eq $CANONICAL_COUNT ]]; then
-    echo "✅ [$TIER_B_TOTAL] $file — $found/$CANONICAL_COUNT types found"
+    echo "✅ [$TIER_B_TOTAL/$TIER_B_EXPECTED] $file — $found/$CANONICAL_COUNT types found"
     TIER_B_PASS=$((TIER_B_PASS + 1))
   else
-    echo "⚠️  [$TIER_B_TOTAL] $file — $found/$CANONICAL_COUNT types found (missing:$missing_types)"
+    echo "⚠️  [$TIER_B_TOTAL/$TIER_B_EXPECTED] $file — $found/$CANONICAL_COUNT types found (missing:$missing_types)"
     TIER_B_WARN=$((TIER_B_WARN + 1))
   fi
 }
