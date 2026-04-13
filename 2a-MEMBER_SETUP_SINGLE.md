@@ -87,7 +87,7 @@ gh auth login
 
 ### 4. 완료!
 
-세팅이 끝났습니다. 이제 [3-DAILY_WORKFLOW.md](./3-DAILY_WORKFLOW.md)를 읽고 작업을 시작하세요.
+세팅이 끝났습니다. 이제 [3a-DAILY_WORKFLOW_SINGLE.md](./3a-DAILY_WORKFLOW_SINGLE.md)를 읽고 작업을 시작하세요.
 
 > ⚠️ **첫 commit 전에 알아두면 좋은 것**
 >
@@ -98,7 +98,7 @@ gh auth login
 > #     fix: door trigger 오류 수정
 > #     remove: unused asset 및 테스트 코드 삭제
 > ```
-> `<type>`은 `feat | fix | refactor | docs | research | data | chore | remove` 중 하나. subject는 **한국어/영문/혼용 모두 허용** (첫 글자만 A-Z 대문자 금지). 자세한 규칙은 [3-DAILY_WORKFLOW.md §3 커밋 메시지 규칙](./3-DAILY_WORKFLOW.md#3-커밋-메시지-규칙) 참조.
+> `<type>`은 `feat | fix | refactor | docs | research | data | chore | remove` 중 하나. subject는 **한국어/영문/혼용 모두 허용** (첫 글자만 A-Z 대문자 금지). 자세한 규칙은 [3a-DAILY_WORKFLOW_SINGLE.md §3 커밋 메시지 규칙](./3a-DAILY_WORKFLOW_SINGLE.md#3-커밋-메시지-규칙) 참조.
 
 ---
 

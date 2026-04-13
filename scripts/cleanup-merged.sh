@@ -16,7 +16,9 @@
 
 set -euo pipefail
 
-PROTECTED_BRANCHES="main master develop"
+source "$(dirname "${BASH_SOURCE[0]}")/_config.sh"
+
+PROTECTED_BRANCHES=$(echo "main master develop $DEFAULT_BRANCH" | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/ $//')
 
 # --exclude 패턴 누적 (bash glob 문법: *, ?, [abc] 지원)
 EXCLUDE_PATTERNS=()
@@ -63,9 +65,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# main 최신화
-echo "🔍 main 브랜치 최신화 중..."
-git checkout main
+# DEFAULT_BRANCH 최신화
+echo "🔍 $DEFAULT_BRANCH 브랜치 최신화 중..."
+git checkout "$DEFAULT_BRANCH"
 git pull --ff-only
 
 echo "🔍 원격 추적 정보 정리 중 (git fetch -p)..."
@@ -75,7 +77,7 @@ git fetch -p
 PROTECTED_LINES=$(echo "$PROTECTED_BRANCHES" | tr ' ' '\n')
 
 # 1) 머지된 로컬 브랜치
-MERGED=$(git branch --merged main \
+MERGED=$(git branch --merged "$DEFAULT_BRANCH" \
   | sed 's/^[ *]*//' \
   | grep -v -x -F "$PROTECTED_LINES" \
   || true)

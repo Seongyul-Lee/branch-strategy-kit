@@ -33,6 +33,7 @@ GIT_ALIASES=(
   "fb=!bash ./scripts/finish-branch.sh"
   "cleanup=!bash ./scripts/cleanup-merged.sh"
   "branch-move=!bash ./scripts/branch-move.sh"
+  "sync-main=!bash ./scripts/sync-main.sh"
   "bootstrap=!bash ./scripts/bootstrap.sh"
 )
 
@@ -409,6 +410,7 @@ print_summary() {
     echo "      git fb                 — PR 생성"
     echo "      git cleanup            — 머지된 브랜치 정리"
     echo "      git branch-move        — 로컬 브랜치 인터랙티브 전환"
+    echo "      git sync-main          — develop→main PR 생성 (Two-branch 모드)"
     echo "      git bootstrap          — 이 스크립트 재실행"
   fi
   echo ""
