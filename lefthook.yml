@@ -8,7 +8,7 @@
 #   2. 저장소에서 1회: lefthook install
 #
 # 검증되는 항목:
-#   - pre-push: 브랜치명 규칙 + main 직접 push 차단
+#   - pre-push: 브랜치명 규칙 + main/develop 직접 push 차단 (DEFAULT_BRANCH 기준)
 #   - commit-msg: Conventional Commits 형식
 
 # NOTE: 인라인 multi-line 스크립트는 Git Bash on Windows에서 lefthook이
