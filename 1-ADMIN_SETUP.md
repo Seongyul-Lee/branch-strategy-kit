@@ -106,6 +106,31 @@ GitHub repo → **Settings → General → Pull Requests**:
 - ☑ **Always suggest updating pull request branches**
 - ☑ **Automatically delete head branches**
 
+### 1-3. Two-branch 모드 설정 (선택)
+
+develop/main Two-branch 모드를 사용하려면 추가로 다음을 수행합니다. Single-trunk 모드를 유지하려면 이 단계를 건너뛰세요.
+
+**a. `.kit-config` 수정:**
+
+```bash
+# .kit-config 파일을 열고 DEFAULT_BRANCH를 변경
+# DEFAULT_BRANCH=main   ← 이 줄을 아래로 변경
+DEFAULT_BRANCH=develop
+```
+
+**b. develop 브랜치 생성 + push:**
+
+```bash
+git checkout -b develop main
+git push -u origin develop
+```
+
+**c. develop 브랜치 보호 규칙 추가:**
+
+GitHub repo → **Settings → Branches → Add branch protection rule**:
+- **Branch name pattern**: `develop`
+- Step 1-1과 동일한 보호 규칙 적용
+
 ### ✅ Step 1 검증
 
 main에 직접 push가 차단되는지 확인합니다:
@@ -148,6 +173,7 @@ cp ~/branch-strategy-kit/.github/pull_request_template.md .github/
 # .gitattributes — Windows 팀원의 CRLF/LF "유령 modified" 방지
 # (이미 .gitattributes가 있다면 키트 버전의 규칙을 머지: *.sh, *.yml, *.yaml, *.bash → eol=lf)
 cp ~/branch-strategy-kit/.gitattributes .
+cp ~/branch-strategy-kit/.kit-config .
 ```
 
 > ⚠️ **`.gitattributes`를 누락하면 어떻게 되나**
@@ -261,12 +287,16 @@ git branch -D chore/add-lefthook-and-scripts   # squash merge는 -d로 감지되
 
 ### ✅ Step 3 관리자 세팅 완료, 팀원에게 가이드 공유
 
-PR을 머지한 뒤, 팀원에게 [2-MEMBER_SETUP.md](./2-MEMBER_SETUP.md)를 공유하세요.
+PR을 머지한 뒤, 팀원에게 브랜치 모드에 맞는 가이드를 공유하세요.
 
 ---
 
 ## 세팅 완료 후 할 일
 
-1. **팀원에게 [2-MEMBER_SETUP.md](./2-MEMBER_SETUP.md) 링크를 공유**하세요. 팀원은 이 문서만 읽으면 됩니다.
+1. **팀원에게 브랜치 모드에 맞는 가이드를 공유**하세요:
+   - Single-trunk: [2a-MEMBER_SETUP_SINGLE.md](./2a-MEMBER_SETUP_SINGLE.md)
+   - Two-branch: [2b-MEMBER_SETUP_TWO.md](./2b-MEMBER_SETUP_TWO.md)
 2. `gh auth status`로 GitHub CLI 인증 여부를 확인하고, 미인증이면 `gh auth login`을 실행하세요.
-2. 일상 워크플로우는 [3-DAILY_WORKFLOW.md](./3-DAILY_WORKFLOW.md)를 참조하세요.
+3. 일상 워크플로우:
+   - Single-trunk: [3a-DAILY_WORKFLOW_SINGLE.md](./3a-DAILY_WORKFLOW_SINGLE.md)
+   - Two-branch: [3b-DAILY_WORKFLOW_TWO.md](./3b-DAILY_WORKFLOW_TWO.md)
