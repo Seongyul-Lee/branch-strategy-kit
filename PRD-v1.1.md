@@ -423,7 +423,7 @@ git sync-main                # 6. develop→main PR 생성 (릴리스 시)
 
 | 지표 | 목표 | 측정 방법 |
 |------|------|-----------|
-| SACHO 프로젝트 팀원 만족도 | 팀원들이 워크플로우에 만족 | 팀원 피드백 [정성적] |
+| SACHO 프로젝트 팀원 만족도 | 팀원들이 워크플로우에 만족 | 팀원 피드백 |
 | main 직접 push 차단율 | 100% | branch protection 로그 |
 | 브랜치명 규칙 위반율 | 0% (CI 통과 기준) | `branch-name-check.yml` 실패 로그 |
 | PR 제목 규칙 위반율 | 0% (CI 통과 기준) | `pr-title-check.yml` 실패 로그 |
@@ -465,7 +465,7 @@ git sync-main                # 6. develop→main PR 생성 (릴리스 시)
 | ~~높음~~ | ~~Kit-self CI~~ | shellcheck, bash syntax, yamllint, markdown lint, link check, invariant sync | ✅ v1.1.0 완료 |
 | ~~높음~~ | ~~install.sh~~ | 킷 파일 일괄 복사 스크립트 | ✅ v1.1.0 완료 |
 | 중간 | **`git branch-move` 개선** | 기능 및 인터페이스 개선 (UX 향상) | 미착수 |
-| 중간 | **관리자 세팅 간소화** | 도입 시간 단축, 설정 단계 자동화 확대 | 미착수 |
+| ~~중간~~ | ~~관리자 세팅 간소화~~ | `install.sh`로 파일 복사 자동화, 도입 시간 단축 | ✅ v1.1.0 1차 완료 (`install.sh`) |
 | 낮음 | **영어 문서** | README_en.md 등 OSS 발견성 향상 | 미착수 |
 | 낮음 | **비-TTY ASCII fallback** | CI/Docker 환경에서 이모지 대신 `[ERROR]`/`[OK]` 출력 | 미착수 |
 | 낮음 | **`DEBUG=1` 환경변수** | 모든 스크립트에서 `set -x` 활성화 | 미착수 |
