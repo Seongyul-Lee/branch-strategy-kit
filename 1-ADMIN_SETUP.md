@@ -138,23 +138,12 @@ PR 단계에서 잘못된 브랜치명·PR 제목을 자동 차단하는 workflo
 
 ```bash
 cd <your-team-repo>
-mkdir -p .github/workflows
-
-# CI 워크플로우 + PR 템플릿
-cp ~/branch-strategy-kit/.github/workflows/branch-name-check.yml .github/workflows/
-cp ~/branch-strategy-kit/.github/workflows/pr-title-check.yml .github/workflows/
-cp ~/branch-strategy-kit/.github/workflows/stale-branches.yml .github/workflows/
-cp ~/branch-strategy-kit/.github/pull_request_template.md .github/
-
-# 킷 설정 + lefthook + 헬퍼 스크립트
-cp ~/branch-strategy-kit/.kit-config .
-cp ~/branch-strategy-kit/.gitattributes .
-cp ~/branch-strategy-kit/lefthook.yml .
-cp -r ~/branch-strategy-kit/scripts .
-
-# 실행 권한 설정
-chmod +x scripts/*.sh
+~/branch-strategy-kit/install.sh
 ```
+
+> 💡 `install.sh`는 CI 워크플로우, PR 템플릿, `.kit-config`, `.gitattributes`, `lefthook.yml`, `scripts/` 전체를 복사하고 `chmod +x`까지 자동으로 처리합니다. 복사 전에 대상 경로를 확인받으며, 기존 파일이 있으면 diff를 보여주고 덮어쓸지 물어봅니다.
+>
+> 복사될 파일만 미리 확인하려면: `~/branch-strategy-kit/install.sh --dry-run`
 
 > ⚠️ **`.gitattributes`를 누락하면 어떻게 되나**
 >
