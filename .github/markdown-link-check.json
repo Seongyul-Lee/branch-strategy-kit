@@ -1,0 +1,12 @@
+{
+  "ignorePatterns": [
+    { "pattern": "^CLAUDE\\.md" },
+    { "pattern": "^docs/" },
+    { "pattern": "^KITPROCESS\\.md" },
+    { "pattern": "^https://github\\.com/.*/settings" }
+  ],
+  "timeout": "10s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "aliveStatusCodes": [200, 206, 301, 302, 308]
+}
