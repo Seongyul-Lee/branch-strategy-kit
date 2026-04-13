@@ -1,0 +1,20 @@
+{
+  "config": {
+    // --- 계획된 룰 (설계 문서 명시) ---
+    "MD013": false,
+    "MD024": { "siblings_only": true },
+    "MD033": false,
+    // --- 기존 파일 호환을 위해 추가 비활성화 ---
+    "MD009": false,
+    "MD012": false,
+    "MD022": false,
+    "MD026": false,
+    "MD028": false,
+    "MD031": false,
+    "MD032": false,
+    "MD038": false,
+    "MD040": false,
+    "MD041": false,
+    "MD060": false
+  }
+}
