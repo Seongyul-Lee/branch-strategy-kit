@@ -11,13 +11,20 @@ jobs:
       - name: Validate branch name
         env:
           BRANCH: ${{ github.head_ref }}
+          BASE: ${{ github.base_ref }}
         run: |
+          # develop→main (sync-main) PR은 브랜치명 검증 스킵
+          if [[ "$BRANCH" == "develop" && "$BASE" == "main" ]]; then
+            echo "✅ develop→main PR: 브랜치명 검증 스킵"
+            exit 0
+          fi
+
           PATTERN="^(feat|fix|refactor|docs|research|data|chore|remove)/[a-z0-9][a-z0-9-]*$"
           if [[ ! "$BRANCH" =~ $PATTERN ]]; then
             echo "::error::브랜치명 '$BRANCH'이 규칙을 위반합니다."
             echo "::error::올바른 형식: feat/my-feature, fix/bug-name, refactor/..., docs/..., research/..., data/..., chore/..., remove/..."
             echo "::error::소문자 + 숫자 + 하이픈만 허용. 한국어/대문자/언더스코어 금지."
-            echo "::error::참고: 3-DAILY_WORKFLOW.md §2 브랜치 네이밍 규칙"
+            echo "::error::참고: 3a-DAILY_WORKFLOW_SINGLE.md §2 또는 3b-DAILY_WORKFLOW_TWO.md §2 브랜치 네이밍 규칙"
             exit 1
           fi
           echo "✅ 브랜치명 OK: $BRANCH"

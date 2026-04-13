@@ -1,0 +1,5 @@
+# branch-strategy-kit 설정
+# DEFAULT_BRANCH: 작업 브랜치의 기본 분기점
+#   main    → Single-trunk 모드 (기존 v1.0.0 동작)
+#   develop → Two-branch 모드 (develop이 통합 브랜치, main은 릴리스)
+DEFAULT_BRANCH=main

@@ -6,6 +6,8 @@
 
 set -euo pipefail
 
+source "$(dirname "${BASH_SOURCE[0]}")/_config.sh"
+
 NO_PR=0
 for arg in "$@"; do
   case "$arg" in
@@ -33,8 +35,8 @@ fi
 # 현재 브랜치
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-if [[ "$BRANCH" == "main" ]]; then
-  echo "❌ main 브랜치에서는 실행할 수 없습니다."
+if [[ "$BRANCH" == "main" || "$BRANCH" == "$DEFAULT_BRANCH" ]]; then
+  echo "❌ $BRANCH 브랜치에서는 실행할 수 없습니다."
   echo "   먼저 작업 브랜치로 전환하세요: git nb <type> <name>"
   exit 1
 fi
@@ -65,9 +67,9 @@ if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
 fi
 
 # main과의 차이가 있는지
-COMMITS_AHEAD=$(git rev-list --count main..HEAD 2>/dev/null || echo "0")
+COMMITS_AHEAD=$(git rev-list --count "$DEFAULT_BRANCH"..HEAD 2>/dev/null || echo "0")
 if [[ "$COMMITS_AHEAD" == "0" ]]; then
-  echo "❌ main 대비 커밋이 없습니다. 먼저 작업을 커밋하세요."
+  echo "❌ $DEFAULT_BRANCH 대비 커밋이 없습니다. 먼저 작업을 커밋하세요."
   exit 1
 fi
 
@@ -102,7 +104,7 @@ fi
 # (--fill은 multi-commit PR에서 브랜치명을 Conventional Commits가 아닌 형식으로
 #  변환해 PR 제목 검증이 실패하는 버그가 있어 --fill-first로 통일한다.)
 echo "📝 PR 생성 중..."
-gh pr create --fill-first
+gh pr create --base "$DEFAULT_BRANCH" --fill-first
 
 echo ""
 echo "PR 생성 완료✅  리뷰 후 GitHub에서 'Squash and merge' 버튼을 클릭하세요."

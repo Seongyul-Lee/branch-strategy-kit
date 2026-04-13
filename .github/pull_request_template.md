@@ -17,7 +17,7 @@
 - [ ] 브랜치명이 규칙을 따른다 (`feat/...`, `fix/...`, `data/...` 등)
 - [ ] 1~2일 안에 끝낼 수 있는 단위다
 - [ ] 로컬에서 테스트/린트가 통과한다
-- [ ] PR 제목이 squash merge 후 main 이력으로 적절하다 (Conventional Commits)
+- [ ] PR 제목이 squash merge 후 대상 브랜치 이력으로 적절하다 (Conventional Commits)
 - [ ] 데이터/스키마 변경 시 마이그레이션 영향 검토 완료 (`data/*` 브랜치인 경우)
 
 ## 관련 이슈

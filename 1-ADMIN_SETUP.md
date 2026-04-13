@@ -2,7 +2,7 @@
 
 팀 프로젝트 레포에 브랜치 전략 자동화를 도입하는 가이드입니다. **레포 admin 권한이 필요**합니다.
 
-총 3단계이며, Step 1~2는 필수, Step 3은 선택이지만 주기능입니다.
+총 3단계이며, 모든 단계를 순서대로 진행합니다.
 
 ---
 
@@ -140,28 +140,40 @@ PR 단계에서 잘못된 브랜치명·PR 제목을 자동 차단하는 workflo
 cd <your-team-repo>
 mkdir -p .github/workflows
 
+# CI 워크플로우 + PR 템플릿
 cp ~/branch-strategy-kit/.github/workflows/branch-name-check.yml .github/workflows/
 cp ~/branch-strategy-kit/.github/workflows/pr-title-check.yml .github/workflows/
 cp ~/branch-strategy-kit/.github/workflows/stale-branches.yml .github/workflows/
 cp ~/branch-strategy-kit/.github/pull_request_template.md .github/
 
-# .gitattributes — Windows 팀원의 CRLF/LF "유령 modified" 방지
-# (이미 .gitattributes가 있다면 키트 버전의 규칙을 머지: *.sh, *.yml, *.yaml, *.bash → eol=lf)
+# 킷 설정 + lefthook + 헬퍼 스크립트
+cp ~/branch-strategy-kit/.kit-config .
 cp ~/branch-strategy-kit/.gitattributes .
+cp ~/branch-strategy-kit/lefthook.yml .
+cp -r ~/branch-strategy-kit/scripts .
+
+# 실행 권한 설정
+chmod +x scripts/*.sh
 ```
 
 > ⚠️ **`.gitattributes`를 누락하면 어떻게 되나**
 >
-> Windows의 `core.autocrlf=true`(기본값)와 충돌해 `.yml`/`.sh` 파일이 수정한 적 없는데도 `git status`에 `M`으로 뜨는 **"유령 modified"** 현상이 발생합니다. `git add` 후엔 사라지지만 다음 git 작업 때 또 등장하며, `git fb`가 "main 대비 커밋이 없습니다"로 실패할 수 있습니다. **반드시 함께 복사하세요.**
+> Windows의 `core.autocrlf=true`(기본값)와 충돌해 `.yml`/`.sh` 파일이 수정한 적 없는데도 `git status`에 `M`으로 뜨는 **"유령 modified"** 현상이 발생합니다. `git add` 후엔 사라지지만 다음 git 작업 때 또 등장하며, `git fb`가 "대비 커밋이 없습니다"로 실패할 수 있습니다. **반드시 함께 복사하세요.**
 
 ### 2-2. 커밋 + 푸시 (PR로 도입)
 
 ```bash
 git checkout -b chore/add-branch-strategy-automation
-git add .github/ .gitattributes
-git commit -m "chore: branch strategy CI automation 도입"
+
+# CI + 설정 파일
+git add .github/ .gitattributes .kit-config lefthook.yml
+
+# scripts/*.sh — git 인덱스 등록 + 실행 권한(100755) 한 번에
+git add --chmod=+x scripts/*.sh
+
+git commit -m "chore: branch strategy 자동화 도입"
 git push -u origin chore/add-branch-strategy-automation
-gh pr create --title "chore: branch strategy CI automation 도입" --body "브랜치 전략 CI 자동화 도입"
+gh pr create --title "chore: branch strategy 자동화 도입" --body "브랜치 전략 CI + lefthook + 헬퍼 스크립트 도입"
 ```
 
 PR 리뷰·**squash merge** 완료 후, 로컬을 최신화하고 작업 브랜치를 삭제합니다:
@@ -204,69 +216,60 @@ gh pr close --delete-branch
 
 ---
 
-## Step 3 — 로컬 훅·헬퍼 스크립트 추가 (선택, 5분)
+## Step 3 — 로컬 환경 세팅 + Two-branch 설정 (5분)
 
-로컬에서 push 전에 브랜치명·커밋 메시지를 검증하고, 브랜치 생성·PR·정리를 자동화하는 스크립트를 추가합니다.
+### 3-1. bootstrap 실행
 
-### 3-1. 파일 복사
+Step 2에서 머지한 PR에 lefthook과 헬퍼 스크립트가 포함되어 있습니다. 관리자 본인의 로컬 환경을 세팅합니다:
 
-```bash
-cd <your-team-repo>
-
-# 1. 파일 복사
-cp ~/branch-strategy-kit/lefthook.yml .
-cp -r ~/branch-strategy-kit/scripts .
-
-# 2. 로컬 working tree 실행 권한
-#    - Unix(macOS/Linux): 로컬에서 직접 ./scripts/*.sh 실행 시 필요
-#    - Windows Git Bash: 파일시스템이 exec bit을 보존하지 않아 사실상 no-op (무해)
-chmod +x scripts/*.sh
-```
-
-### 3-2. 커밋 + 푸시
-
-```bash
-# 1. 작업 브랜치 생성
-git checkout -b chore/add-lefthook-and-scripts
-
-# 2. lefthook.yml 일반 추가
-git add lefthook.yml
-
-# 3. scripts/*.sh — git 인덱스 등록 + 실행 권한(100755) 한 번에
-git add --chmod=+x scripts/*.sh
-
-# 4. (권장) 인덱스 모드 검증 — "new file mode 100755" 가 보이면 정상
-git diff --cached scripts/bootstrap.sh | head -3
-
- # 5. 커밋 · 푸시 · PR
-git commit -m "chore: lefthook 및 헬퍼 스크립트 추가"
-git push -u origin chore/add-lefthook-and-scripts
-gh pr create --fill
-```
-
-PR 리뷰·**squash merge** 완료 후, 로컬을 최신화하고 작업 브랜치를 삭제:
-
-```bash
-git checkout main
-git pull --ff-only
-git branch -D chore/add-lefthook-and-scripts   # squash merge는 -d로 감지되지 않아 -D 사용
-```
-
-> 💡 이 PR 머지 이후에는 `./scripts/bootstrap.sh` 한 번 실행하면 `git cleanup` alias가 등록되어, **앞으로는 머지 후 정리를 `git cleanup` 한 줄로** 할 수 있습니다.
-
-관리자 본인의 로컬 환경 세팅:
 ```bash
 ./scripts/bootstrap.sh
 ```
 
+이 스크립트가 자동으로 처리하는 것:
+- `gh` (GitHub CLI) 설치 여부 확인 및 설치
+- `lefthook` 설치 여부 확인 및 설치
+- `lefthook install` 실행 (git hook 등록)
+- `.gitattributes` 점검
+- Git alias 등록 (`git nb`, `git fb`, `git cleanup`, `git sync-main`, `git bootstrap` 등)
+
+### 3-2. Two-branch 모드 설정 (선택)
+
+develop/main Two-branch 모드를 사용하려면 추가로 다음을 수행합니다. Single-trunk 모드를 유지하려면 이 단계를 건너뛰세요.
+
+**a. `.kit-config` 수정:**
+
+```bash
+# .kit-config 파일을 열고 DEFAULT_BRANCH를 변경
+# DEFAULT_BRANCH=main   ← 이 줄을 아래로 변경
+DEFAULT_BRANCH=develop
+```
+
+**b. develop 브랜치 생성 + push:**
+
+```bash
+git checkout -b develop main
+git push -u origin develop
+```
+
+**c. develop 브랜치 보호 규칙 추가:**
+
+GitHub repo → **Settings → Branches → Add branch protection rule**:
+- **Branch name pattern**: `develop`
+- Step 1-1과 동일한 보호 규칙 적용
+
 ### ✅ Step 3 관리자 세팅 완료, 팀원에게 가이드 공유
 
-PR을 머지한 뒤, 팀원에게 [2-MEMBER_SETUP.md](./2-MEMBER_SETUP.md)를 공유하세요.
+팀원에게 브랜치 모드에 맞는 가이드를 공유하세요.
 
 ---
 
 ## 세팅 완료 후 할 일
 
-1. **팀원에게 [2-MEMBER_SETUP.md](./2-MEMBER_SETUP.md) 링크를 공유**하세요. 팀원은 이 문서만 읽으면 됩니다.
+1. **팀원에게 브랜치 모드에 맞는 가이드를 공유**하세요:
+   - Single-trunk: [2a-MEMBER_SETUP_SINGLE.md](./2a-MEMBER_SETUP_SINGLE.md)
+   - Two-branch: [2b-MEMBER_SETUP_TWO.md](./2b-MEMBER_SETUP_TWO.md)
 2. `gh auth status`로 GitHub CLI 인증 여부를 확인하고, 미인증이면 `gh auth login`을 실행하세요.
-2. 일상 워크플로우는 [3-DAILY_WORKFLOW.md](./3-DAILY_WORKFLOW.md)를 참조하세요.
+3. 일상 워크플로우:
+   - Single-trunk: [3a-DAILY_WORKFLOW_SINGLE.md](./3a-DAILY_WORKFLOW_SINGLE.md)
+   - Two-branch: [3b-DAILY_WORKFLOW_TWO.md](./3b-DAILY_WORKFLOW_TWO.md)
