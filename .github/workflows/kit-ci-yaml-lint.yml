@@ -1,0 +1,20 @@
+name: "Kit CI: YAML Lint"
+
+on:
+  pull_request:
+    paths:
+      - "lefthook.yml"
+      - ".github/workflows/*.yml"
+      - ".yamllint.yml"
+
+jobs:
+  yaml-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint YAML files
+        run: yamllint -s lefthook.yml .github/workflows/*.yml
