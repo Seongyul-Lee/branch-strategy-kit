@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# new-branch.sh — main을 최신화하고 <type>/<name> 형식의 새 작업 브랜치 생성
+# new-branch.sh — DEFAULT_BRANCH를 최신화하고 <type>/<name> 형식의 새 작업 브랜치 생성
 #
 # Usage:
 #   ./scripts/new-branch.sh                    # 인터랙티브 모드 (TTY 필요)
@@ -10,6 +10,8 @@
 #   name: kebab-case (대소문자/공백/언더스코어는 자동 변환)
 
 set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/_config.sh"
 
 # 타입 배열과 한국어 설명 배열은 인덱스가 정확히 일치해야 한다.
 # 순서를 바꾸거나 항목을 추가할 때 두 배열을 함께 수정할 것.
@@ -146,9 +148,14 @@ fi
 
 BRANCH="${TYPE}/${NAME_NORMALIZED}"
 
-# main 최신화
-echo "🔍 main 브랜치 최신화 중..."
-git checkout main
+# DEFAULT_BRANCH 최신화
+echo "🔍 $DEFAULT_BRANCH 브랜치 최신화 중..."
+if ! git show-ref --verify --quiet "refs/heads/$DEFAULT_BRANCH"; then
+  echo "   로컬에 $DEFAULT_BRANCH 브랜치가 없어 원격에서 가져옵니다..."
+  git checkout -b "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+else
+  git checkout "$DEFAULT_BRANCH"
+fi
 git pull --ff-only
 
 # 브랜치 존재 여부 확인
