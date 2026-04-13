@@ -82,7 +82,7 @@ ls .git/hooks/pre-push    # 파일이 존재하는지 확인
 ```bash
 gh auth login
 ```
-대화형 프롬프트를 따라 인증하세요. 자세한 절차는 [2-MEMBER_SETUP.md](./2-MEMBER_SETUP.md#3-github-cli-인증)를 참조하세요.
+대화형 프롬프트를 따라 인증하세요. 자세한 절차는 [2a-MEMBER_SETUP_SINGLE.md](./2a-MEMBER_SETUP_SINGLE.md#3-github-cli-인증)를 참조하세요.
 
 > 💡 gh 없이 push만 하고 싶다면: `git fb --no-pr`
 
@@ -149,11 +149,11 @@ gh pr edit <번호> --body "## Summary
 
 ---
 
-### `git fb` (또는 `finish-branch.sh`)가 "main 대비 커밋이 없습니다"로 실패
+### `git fb` (또는 `finish-branch.sh`)가 "대비 커밋이 없습니다"로 실패
 
 **증상:** `git fb` 실행 시 다음 메시지로 중단되고 PR이 생성되지 않음:
 ```
-❌ main 대비 커밋이 없습니다. 먼저 작업을 커밋하세요.
+❌ (DEFAULT_BRANCH) 대비 커밋이 없습니다. 먼저 작업을 커밋하세요.
 ```
 
 **원인 — 가능한 3가지를 순서대로 확인:**
@@ -253,6 +253,30 @@ bash 스크립트는 CMD/PowerShell에서 동작하지 않습니다.
 - **WSL** — Windows Subsystem for Linux
 
 시작 메뉴에서 "Git Bash"를 검색하여 실행한 뒤, 레포 디렉터리로 이동하세요.
+
+---
+
+## Two-branch 모드 관련
+
+### `git sync-main` 실행 시 "Single-trunk 모드에서는 사용할 수 없습니다" 에러
+
+**원인:** `.kit-config`의 `DEFAULT_BRANCH`가 `main`으로 설정되어 있습니다.
+
+**해결:** Two-branch 모드를 사용하려면 `.kit-config`를 열고 `DEFAULT_BRANCH=develop`으로 변경하세요.
+
+---
+
+### `git nb` 실행 시 "로컬에 develop 브랜치가 없어 원격에서 가져옵니다" 메시지
+
+**원인:** 정상 동작입니다. 처음 clone 후 develop을 로컬에 체크아웃한 적이 없으면 자동으로 원격에서 가져옵니다.
+
+---
+
+### develop 브랜치가 원격에 없음
+
+**원인:** 관리자가 develop 브랜치를 아직 생성하지 않았습니다.
+
+**해결:** 관리자에게 [1-ADMIN_SETUP.md](./1-ADMIN_SETUP.md)의 "1-3. Two-branch 모드 설정"을 참조해달라고 요청하세요.
 
 ---
 
