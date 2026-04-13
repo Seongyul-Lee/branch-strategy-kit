@@ -1,0 +1,22 @@
+name: "Kit CI: Invariant Sync"
+
+on:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - ".github/workflows/**"
+      - ".github/pull_request_template.md"
+      - "README.md"
+      - "*.md"
+
+jobs:
+  invariant:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify invariant sync
+        run: bash scripts/verify-invariant.sh

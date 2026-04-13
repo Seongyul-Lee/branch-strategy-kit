@@ -6,6 +6,7 @@ _KIT_CONFIG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _KIT_CONFIG_FILE="${_KIT_CONFIG_DIR}/.kit-config"
 
 if [[ -f "$_KIT_CONFIG_FILE" ]]; then
+  # shellcheck source=/dev/null
   source "$_KIT_CONFIG_FILE"
 fi
 

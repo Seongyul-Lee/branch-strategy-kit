@@ -129,7 +129,8 @@ confirm() {
 
 ensure_tool() {
   local tool="$1" pm="$2"
-  local status_var="STATUS_$(echo "$tool" | tr '[:lower:]' '[:upper:]')"
+  local status_var
+  status_var="STATUS_$(echo "$tool" | tr '[:lower:]' '[:upper:]')"
 
   if command -v "$tool" >/dev/null 2>&1; then
     printf -v "$status_var" "%s" "already"
