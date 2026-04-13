@@ -1,32 +1,20 @@
 {
   "config": {
-    // MD013: 한국어 문서 특성상 줄 길이 제어 비실용적
+    // --- 계획된 룰 (설계 문서 명시) ---
     "MD013": false,
-    // MD033: <details> 태그를 README 등에서 의도적 사용
-    "MD033": false,
-    // MD024: CHANGELOG에서 버전별 동일 헤딩 반복 허용
     "MD024": { "siblings_only": true },
-    // MD060: 한국어 테이블에서 compact 파이프 스타일 대량 사용
-    "MD060": false,
-    // MD032: blockquote/리스트 내 빈 줄 규칙 — 가이드 문서 서식과 충돌
-    "MD032": false,
-    // MD031: blockquote 내 fenced code block 빈 줄 규칙
-    "MD031": false,
-    // MD040: 의도적으로 언어 미지정 코드 블록 사용
-    "MD040": false,
-    // MD022: 헤딩 주변 빈 줄 — 기존 문서 서식과 충돌
-    "MD022": false,
-    // MD009: trailing spaces — 기존 문서에 산재
+    "MD033": false,
+    // --- 기존 파일 호환을 위해 추가 비활성화 ---
     "MD009": false,
-    // MD041: PR 템플릿은 ## 으로 시작
-    "MD041": false,
-    // MD012: PR 템플릿 등에서 의도적 연속 빈 줄
     "MD012": false,
-    // MD026: 한국어 헤딩 끝 구두점(!)
+    "MD022": false,
     "MD026": false,
-    // MD028: blockquote 내 빈 줄
     "MD028": false,
-    // MD038: 코드 스팬 내 공백
-    "MD038": false
+    "MD031": false,
+    "MD032": false,
+    "MD038": false,
+    "MD040": false,
+    "MD041": false,
+    "MD060": false
   }
 }
