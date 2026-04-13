@@ -151,7 +151,7 @@ branch-strategy-kit/
 - (선택) [GitHub CLI (`gh`)](https://cli.github.com/) — PR 생성·정리 시 필수
 - (선택) [lefthook](https://github.com/evilmartians/lefthook) — 클라이언트 훅 사용 시
 
-> 💡 위 선택 의존성은 [`bootstrap.sh`](./2a-MEMBER_SETUP_SINGLE.md)로 한 번에 설치할 수 있습니다.
+> 💡 위 선택 의존성은 `bootstrap.sh`로 한 번에 설치할 수 있습니다 ([팀원 셋업 가이드](./2a-MEMBER_SETUP_SINGLE.md) 참조).
 
 ---
 

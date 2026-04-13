@@ -178,7 +178,7 @@ cp ~/branch-strategy-kit/.kit-config .
 
 > ⚠️ **`.gitattributes`를 누락하면 어떻게 되나**
 >
-> Windows의 `core.autocrlf=true`(기본값)와 충돌해 `.yml`/`.sh` 파일이 수정한 적 없는데도 `git status`에 `M`으로 뜨는 **"유령 modified"** 현상이 발생합니다. `git add` 후엔 사라지지만 다음 git 작업 때 또 등장하며, `git fb`가 "main 대비 커밋이 없습니다"로 실패할 수 있습니다. **반드시 함께 복사하세요.**
+> Windows의 `core.autocrlf=true`(기본값)와 충돌해 `.yml`/`.sh` 파일이 수정한 적 없는데도 `git status`에 `M`으로 뜨는 **"유령 modified"** 현상이 발생합니다. `git add` 후엔 사라지지만 다음 git 작업 때 또 등장하며, `git fb`가 "대비 커밋이 없습니다"로 실패할 수 있습니다. **반드시 함께 복사하세요.**
 
 ### 2-2. 커밋 + 푸시 (PR로 도입)
 

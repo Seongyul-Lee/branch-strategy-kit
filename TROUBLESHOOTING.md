@@ -153,15 +153,19 @@ gh pr edit <번호> --body "## Summary
 
 **증상:** `git fb` 실행 시 다음 메시지로 중단되고 PR이 생성되지 않음:
 ```
-❌ (DEFAULT_BRANCH) 대비 커밋이 없습니다. 먼저 작업을 커밋하세요.
+❌ main 대비 커밋이 없습니다. 먼저 작업을 커밋하세요.
+# 또는 Two-branch 모드에서:
+❌ develop 대비 커밋이 없습니다. 먼저 작업을 커밋하세요.
 ```
 
 **원인 — 가능한 3가지를 순서대로 확인:**
 
 1. **정말 커밋이 없는 경우** — 작업은 했는데 `git commit`을 안 했거나, 다른 브랜치에 커밋했을 수 있음.
    ```bash
-   git log main..HEAD --oneline    # 비어 있으면 커밋 0개
-   git status                       # untracked / modified 확인
+   # Single-trunk: main, Two-branch: develop
+   git log main..HEAD --oneline      # 비어 있으면 커밋 0개
+   git log develop..HEAD --oneline   # Two-branch 모드일 때
+   git status                        # untracked / modified 확인
    ```
 
 2. **유령 modified가 흡수된 경우** (Windows) — `git status`에 `M`으로 떴다가 `git add` 후 사라진 파일이 있다면, 실제로는 변경 내용이 없음. → 아래 "유령 modified" 항목 참조 후 `.gitattributes`를 도입하세요.
