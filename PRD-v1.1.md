@@ -319,10 +319,9 @@ v1.1.0의 핵심 변경은 **Two-branch(develop/main) 모드 지원**이다. `.k
 | 단계 | 역할 | 소요 시간 | 작업 내용 | 관련 문서 |
 |------|------|-----------|-----------|-----------|
 | 1 | 관리자 | ~5분 | GitHub branch protection 설정 (main 보호, squash only, linear history) | `1-ADMIN_SETUP.md` Step 1 |
-| 2 | 관리자 | ~5분 | `install.sh`로 킷 파일 일괄 복사 또는 수동 복사 | `1-ADMIN_SETUP.md` Step 2 |
-| 3 | 관리자 | ~2분 | `.kit-config`에서 운영 모드 선택 (Single: `main` / Two: `develop`) | `1-ADMIN_SETUP.md` Step 2-1 |
-| 4 | 관리자 | ~5분 | lefthook 설정 + 스크립트 복사 (선택) | `1-ADMIN_SETUP.md` Step 3 |
-| 5 | 팀원 | ~5분 | `./scripts/bootstrap.sh` 실행 (gh, lefthook, alias, hooks 일괄 설정) | `2a-MEMBER_SETUP_SINGLE.md` / `2b-MEMBER_SETUP_TWO.md` |
+| 2 | 관리자 | ~10분 | `install.sh`로 킷 파일 일괄 복사 → 커밋 + PR + squash merge → status check 등록 | `1-ADMIN_SETUP.md` Step 2 |
+| 3 | 관리자 | ~5분 | `bootstrap.sh` 실행 (로컬 환경 세팅) + Two-branch 모드 설정 (선택) | `1-ADMIN_SETUP.md` Step 3 |
+| 4 | 팀원 | ~5분 | `./scripts/bootstrap.sh` 실행 (gh, lefthook, alias, hooks 일괄 설정) | `2a-MEMBER_SETUP_SINGLE.md` / `2b-MEMBER_SETUP_TWO.md` |
 
 ### 7.2 일상 사용 — Single-trunk 모드 (Daily Workflow)
 
