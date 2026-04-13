@@ -126,6 +126,7 @@ if [[ ${#EXCLUDE_PATTERNS[@]} -gt 0 && -n "$ALL_TO_DELETE" ]]; then
     matched=0
     for pat in "${EXCLUDE_PATTERNS[@]}"; do
       # bash 내장 glob 매칭 — $pat은 인용하지 않아야 패턴으로 해석됨
+      # shellcheck disable=SC2053
       if [[ "$b" == $pat ]]; then
         matched=1
         break
