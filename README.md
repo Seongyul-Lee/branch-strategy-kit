@@ -33,6 +33,9 @@
 ## 30초 미리보기
 
 ```bash
+# 관리자: 킷 파일 일괄 복사 (대상 repo에서 실행)
+~/branch-strategy-kit/install.sh
+
 # 팀원 1회 셋업 (의존성 + lefthook + git alias 등록)
 ./scripts/bootstrap.sh
 
