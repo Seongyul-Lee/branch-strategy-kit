@@ -77,12 +77,11 @@ echo ""
 # ── Tier A: 필수 검증 ──
 
 TIER_A_EXPECTED=7
-echo "── Tier A: 필수 검증 ($TIER_A_EXPECTED곳) ──"
+echo "── Tier A: 필수 검증 (${TIER_A_EXPECTED}곳) ──"
 
 check_tier_a() {
   local file="$1"
-  local label="$2"
-  local types="$3"
+  local types="$2"
 
   TIER_A_TOTAL=$((TIER_A_TOTAL + 1))
 
@@ -166,20 +165,20 @@ extract_readme_types() {
 
 # ── Tier A 실행 ──
 
-check_tier_a "scripts/check-commit-msg.sh" "PATTERN" "$(extract_commit_msg_types)"
-check_tier_a "scripts/finish-branch.sh" "PATTERN" "$(extract_finish_branch_types)"
-check_tier_a "scripts/new-branch.sh" "ALLOWED_TYPES" "$(extract_new_branch_types)"
-check_tier_a ".github/workflows/branch-name-check.yml" "PATTERN" "$(extract_branch_name_check_types)"
-check_tier_a ".github/workflows/pr-title-check.yml" "types" "$(extract_pr_title_check_types)"
-check_tier_a ".github/pull_request_template.md" "checkbox" "$(extract_pr_template_types)"
-check_tier_a "README.md" "backtick list" "$(extract_readme_types)"
+check_tier_a "scripts/check-commit-msg.sh" "$(extract_commit_msg_types)"
+check_tier_a "scripts/finish-branch.sh" "$(extract_finish_branch_types)"
+check_tier_a "scripts/new-branch.sh" "$(extract_new_branch_types)"
+check_tier_a ".github/workflows/branch-name-check.yml" "$(extract_branch_name_check_types)"
+check_tier_a ".github/workflows/pr-title-check.yml" "$(extract_pr_title_check_types)"
+check_tier_a ".github/pull_request_template.md" "$(extract_pr_template_types)"
+check_tier_a "README.md" "$(extract_readme_types)"
 
 echo ""
 
 # ── Tier B: 가이드 문서 검증 ──
 
 TIER_B_EXPECTED=4
-echo "── Tier B: 가이드 문서 검증 ($TIER_B_EXPECTED곳) ──"
+echo "── Tier B: 가이드 문서 검증 (${TIER_B_EXPECTED}곳) ──"
 
 check_tier_b() {
   local file="$1"
