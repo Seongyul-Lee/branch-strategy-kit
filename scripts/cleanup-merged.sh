@@ -88,26 +88,87 @@ GONE=$(git branch -vv \
   | grep -v -x -F "$PROTECTED_LINES" \
   || true)
 
-# 3) GitHub PR이 MERGED 상태인 로컬 브랜치 (auto-delete 미동작 대응)
-PR_MERGED=""
+# gh 인증 상태 + PR 캐시 (스크립트 레벨 1회 선언)
+# PR_MERGED_CACHE는 is_pr_merged_for_branch()와 detect_reason() 간 공유되며,
+# 재선언 시 리셋되므로 반드시 한 번만 declare 한다.
+GH_AVAILABLE=0
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-  echo "🔍 GitHub PR 상태 확인 중 (gh)..."
-  # 머지된 PR의 head ref 목록을 한 번의 API 호출로 가져옴
-  MERGED_PR_HEADS=$(gh pr list --state merged --limit 200 \
-    --json headRefName --jq '.[].headRefName' 2>/dev/null \
+  GH_AVAILABLE=1
+fi
+
+declare -A PR_MERGED_CACHE
+
+# is_pr_merged_for_branch <branch>
+#   종료 코드: 0 = 머지됨, 1 = 머지 아님 / gh 미사용 / 확인 불가
+#   부수 효과: PR_MERGED_CACHE[branch] = "yes" | "no"
+#
+# PR의 headRefOid와 로컬 브랜치의 HEAD SHA가 정확히 일치해야 머지로 인정.
+# 브랜치명 재사용(1차 merged 후 같은 이름으로 새 브랜치) 시 오탐을 차단한다.
+is_pr_merged_for_branch() {
+  local branch="$1"
+
+  if [[ -n "${PR_MERGED_CACHE[$branch]+x}" ]]; then
+    [[ "${PR_MERGED_CACHE[$branch]}" == "yes" ]]
+    return
+  fi
+
+  if [[ "$GH_AVAILABLE" -ne 1 ]]; then
+    PR_MERGED_CACHE[$branch]="no"
+    return 1
+  fi
+
+  local pr_head_sha
+  pr_head_sha=$(gh pr list --head "$branch" --state merged --limit 1 \
+      --json headRefOid --jq '.[0].headRefOid // empty' 2>/dev/null || true)
+
+  if [[ -z "$pr_head_sha" ]]; then
+    PR_MERGED_CACHE[$branch]="no"
+    return 1
+  fi
+
+  local branch_head
+  branch_head=$(git rev-parse "$branch" 2>/dev/null || true)
+
+  if [[ -n "$branch_head" && "$branch_head" == "$pr_head_sha" ]]; then
+    PR_MERGED_CACHE[$branch]="yes"
+    return 0
+  fi
+
+  PR_MERGED_CACHE[$branch]="no"
+  return 1
+}
+
+# 3) GitHub PR이 MERGED 상태인 로컬 브랜치 (auto-delete 미동작 대응)
+#    시그널 1/2에서 이미 검출된 브랜치는 제외(UNCHECKED)하고 per-branch 역방향 조회.
+#    `gh pr list --state merged --limit N` 풀 스캔은 N 초과 시 누락되지만,
+#    `--head <branch>`는 브랜치당 독립 조회라 누락이 없고 헤드 SHA까지 확보된다.
+PR_MERGED=""
+
+if [[ "$GH_AVAILABLE" -eq 1 ]]; then
+  # comm -23은 양쪽 입력이 정렬되어 있어야 올바른 차집합을 반환한다 → sort -u 필수
+  ALREADY_DETECTED=$(printf "%s\n%s" "$MERGED" "$GONE" | sort -u | sed '/^$/d')
+
+  LOCAL_BRANCHES=$(git for-each-ref --format='%(refname:short)' refs/heads/ \
+    | grep -v -x -F "$PROTECTED_LINES" \
     | sort -u || true)
 
-  if [[ -n "$MERGED_PR_HEADS" ]]; then
-    LOCAL_BRANCHES=$(git for-each-ref --format='%(refname:short)' refs/heads/ \
-      | grep -v -x -F "$PROTECTED_LINES" \
-      | sort -u || true)
+  if [[ -n "$ALREADY_DETECTED" ]]; then
+    UNCHECKED=$(comm -23 \
+      <(printf '%s\n' "$LOCAL_BRANCHES") \
+      <(printf '%s\n' "$ALREADY_DETECTED") \
+      | sed '/^$/d' || true)
+  else
+    UNCHECKED="$LOCAL_BRANCHES"
+  fi
 
-    if [[ -n "$LOCAL_BRANCHES" ]]; then
-      # 로컬 브랜치 ∩ 머지된 PR head
-      PR_MERGED=$(comm -12 \
-        <(printf '%s\n' "$LOCAL_BRANCHES") \
-        <(printf '%s\n' "$MERGED_PR_HEADS") || true)
-    fi
+  if [[ -n "$UNCHECKED" ]]; then
+    echo "🔍 GitHub PR 상태 확인 중 (gh)..."
+    while IFS= read -r branch; do
+      [[ -z "$branch" ]] && continue
+      if is_pr_merged_for_branch "$branch"; then
+        PR_MERGED+="$branch"$'\n'
+      fi
+    done <<< "$UNCHECKED"
   fi
 else
   echo "⚠️  gh CLI 미설치 또는 미인증 — PR 상태 검사를 건너뜁니다."
@@ -161,7 +222,16 @@ detect_reason() {
   if echo "$MERGED" | grep -qx "$branch"; then
     echo "merged"
   elif echo "$PR_MERGED" | grep -qx "$branch"; then
-    echo "PR merged on GitHub"
+    # 삭제 단계에서 `git push origin --delete`로 원격도 정리 필요.
+    echo "PR merged on GitHub — origin still alive"
+  elif echo "$GONE" | grep -qx "$branch"; then
+    # GONE 브랜치는 원격 사라짐만으론 머지 여부를 알 수 없다.
+    # headRefOid 일치 확인으로 실제 머지/미머지를 구분 (오탐 차단).
+    if is_pr_merged_for_branch "$branch"; then
+      echo "PR merged on GitHub — origin already gone"
+    else
+      echo "⚠️  gone from remote (PR not merged)"
+    fi
   else
     echo "gone from remote"
   fi
