@@ -145,6 +145,7 @@ is_pr_merged_for_branch() {
 PR_MERGED=""
 
 if [[ "$GH_AVAILABLE" -eq 1 ]]; then
+  # comm -23은 양쪽 입력이 정렬되어 있어야 올바른 차집합을 반환한다 → sort -u 필수
   ALREADY_DETECTED=$(printf "%s\n%s" "$MERGED" "$GONE" | sort -u | sed '/^$/d')
 
   LOCAL_BRANCHES=$(git for-each-ref --format='%(refname:short)' refs/heads/ \
@@ -221,12 +222,13 @@ detect_reason() {
   if echo "$MERGED" | grep -qx "$branch"; then
     echo "merged"
   elif echo "$PR_MERGED" | grep -qx "$branch"; then
-    echo "PR merged on GitHub"
+    # 삭제 단계에서 `git push origin --delete`로 원격도 정리 필요.
+    echo "PR merged on GitHub — origin still alive"
   elif echo "$GONE" | grep -qx "$branch"; then
     # GONE 브랜치는 원격 사라짐만으론 머지 여부를 알 수 없다.
     # headRefOid 일치 확인으로 실제 머지/미머지를 구분 (오탐 차단).
     if is_pr_merged_for_branch "$branch"; then
-      echo "PR merged on GitHub (remote deleted)"
+      echo "PR merged on GitHub — origin already gone"
     else
       echo "⚠️  gone from remote (PR not merged)"
     fi
