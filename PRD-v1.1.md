@@ -178,7 +178,7 @@ v1.1.0의 핵심 변경은 **Two-branch(develop/main) 모드 지원**이다. `.k
   - PR 머지 브랜치는 원격도 삭제 (`git push origin --delete`)
 - **의존성**: `git`, `gh` (선택적 — 없으면 3번째 신호 생략), `_config.sh`
 - **에러 처리**: 보호 브랜치(main/master/develop/`DEFAULT_BRANCH`) 항상 제외, 삭제 전 사용자 확인, 검출 사유 표시
-- **특이사항**: **3-signal 검출** — ① `git branch --merged` ② `git branch -vv`의 `gone` ③ `gh pr list --state merged`. Squash merge로 인해 ①만으로는 감지 불가한 브랜치를 ②③으로 보완
+- **특이사항**: **3-signal 검출** — ① `git branch --merged` ② `git branch -vv`의 `gone` ③ `gh pr list --head <branch> --state merged --json headRefOid` per-branch 역방향 조회 + 로컬 `git rev-parse` 결과와 **SHA 정확 일치**로만 머지 판정. Squash merge로 ①만으로 감지 불가한 브랜치를 ②③으로 보완. ③의 SHA 검증은 "1차 머지 후 같은 이름으로 새 작업 중인 브랜치"(브랜치명 재사용) 오탐을 차단. `PR_MERGED_CACHE` associative array로 signal 3 루프와 `detect_reason()` 분기 간 결과 공유. 상세 설계·14개 시나리오 트레이싱: `docs/design/signal3-design-v3-trace.md`(로컬). ADR-010 참조.
 
 ### FR-005: 브랜치명 검증 (pre-push 훅)
 
@@ -700,7 +700,7 @@ git sync-main                # 6. develop→main PR 생성 (릴리스 시)
 ### 17.2 미처리 엣지 케이스
 
 - **네트워크 오류 시 재시도 없음** `[관찰]`: `new-branch.sh`의 `git pull` 실패 시 1줄 거부만, 재시도 로직 없음
-- **`gh` API rate limit 미처리** `[추론]`: `cleanup-merged.sh`가 PR 조회 시 rate limit에 걸리면 silent fail
+- **`gh` API rate limit 미처리** `[추론]`: `cleanup-merged.sh` signal 3의 per-branch 역방향 조회는 브랜치당 최대 1회 API 호출(캐시 히트 시 0회). 대량 로컬 브랜치 환경에서 rate limit 도달 시 `2>/dev/null || true`로 silent fail → false negative(건너뜀)로 안전측 수렴하나 사용자 경고 없음
 - **대용량 브랜치(>1000개)에서 fzf 성능** `[추론]`: `branch-move.sh`의 fzf 모드는 정렬 작업이 O(n), 1000+ 브랜치에서 응답 지연 가능
 - **비-TTY 환경 fallback 미구현** `[관찰]`: `new-branch.sh` 인터랙티브 모드는 비-TTY에서 즉시 거부, fallback 자동 전환 없음
 
@@ -1060,6 +1060,16 @@ GitHub Actions 외부 액션 사용 현황 (`amannn/action-semantic-pull-request
 | 검토된 대안 | (a) 수동 체크리스트만 유지 (b) 단일 검증 스크립트 + CI (c) pre-commit 훅으로 로컬 검증 |
 | 결정 | `verify-invariant.sh` + `kit-ci-invariant.yml`로 CI 자동 검증 |
 | 근거 | 수동 검증은 누락 불가피. CI에서 매 push 시 자동 실행하여 불일치를 즉시 감지. Tier A(필수 7곳) / Tier B(권고 5곳) 분리로 문서 지연 허용 |
+
+### 23.10 ADR-010: signal 3 per-branch 역방향 조회 + headRefOid 검증 `[사후 기록]`
+
+| 필드 | 내용 |
+|------|------|
+| 상태 | Accepted (post-v1.1.0, `refactor/signal3-reverse-lookup`) |
+| 배경 | 기존 signal 3은 `gh pr list --state merged --limit 200 --json headRefName`로 머지된 PR의 head 이름을 **벌크 조회**한 뒤 로컬 브랜치와 교집합. 두 결함: (a) `--limit 200` 초과 시 과거 PR이 응답에서 누락되어 오래된 로컬 브랜치가 정리되지 않음 (b) 브랜치명만 매칭하므로 **1차 머지 후 같은 이름으로 새 작업 중인 브랜치**가 "머지된 PR"과 동명이라는 이유만으로 삭제 후보에 포함될 수 있음(오탐 삭제 위험) |
+| 검토된 대안 | (a) `--limit` 확대(500/1000) + 페이지네이션 (b) `gh pr list --search ...`로 필터 강화 (c) per-branch 역방향 조회(`--head <branch>`) + `headRefOid` SHA 정확 일치 검증 |
+| 결정 | (c) 채택. `is_pr_merged_for_branch(branch)` 함수로 캡슐화하고 `declare -A PR_MERGED_CACHE` associative array로 signal 3 루프와 `detect_reason()`의 GONE 분기 간 결과를 공유. 스크립트 레벨에서 **1회 선언**(재선언 시 리셋 리스크 제거). `detect_reason()` 표시 문구를 대칭화(`origin still alive` / `origin already gone`) |
+| 근거 | SHA 정확 일치는 브랜치명 재사용 오탐을 원천 차단(시나리오 4.3/4.7/4.8). `--head <branch>`는 브랜치당 독립 조회라 `--limit` 누락이 불가능하고 `headRefOid`까지 확보. 캐싱으로 최악의 경우에도 브랜치당 최대 1회 API 호출로 제한. gh 미설치/미인증·네트워크 실패·GC로 인한 객체 유실 등 모든 실패 경로가 false negative(건너뜀)로 수렴해 **의도치 않은 삭제 0건** 보장. 14개 시나리오 전수 트레이싱으로 안전성 검증 (`docs/design/signal3-design-v3-trace.md`, 로컬) |
 
 ---
 
