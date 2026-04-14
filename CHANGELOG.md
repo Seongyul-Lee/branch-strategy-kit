@@ -15,9 +15,21 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-04-14
+
 ### Added
 - `PRD.md` — 킷 Product Requirements Document 추가 (#30)
-- `VERSION` 파일 및 `CHANGELOG.md` 신설 (본 커밋)
+- `VERSION` 파일 및 `CHANGELOG.md` 신설 (#32)
+- Two-branch(develop/main) 운영 모드 지원 — `.kit-config`에서 `DEFAULT_BRANCH` 전환 (#35)
+- `scripts/sync-main.sh` — develop→main PR 생성 (`git sync-main`) (#35)
+- `scripts/_config.sh` — 킷 설정 로더 헬퍼 (#35)
+- `2b-MEMBER_SETUP_TWO.md`, `3b-DAILY_WORKFLOW_TWO.md` — Two-branch 팀원/데일리 가이드 (#35)
+- `branch-name-check.yml` develop→main PR 예외 처리 (#35)
+- `install.sh` — 킷 파일 일괄 복사 스크립트 (`--dry-run` 지원) (#36)
+- Kit-self CI: ShellCheck + bash syntax check (#38)
+- Kit-self CI: YAML lint, markdown lint, link check (#39)
+- `scripts/verify-invariant.sh` + `kit-ci-invariant.yml` — 12곳 type 목록 일관성 자동 검증 (#40)
+- `PRD-v1.1.md` — v1.1.0 Product Requirements Document, ADR-010 포함 (#41, #43)
 
 ### Changed
 - `README.md` 개선 (#24)
@@ -26,6 +38,19 @@
 - OS별 `gh` 설치 가이드 및 실행 환경 명시 등 문서 개선 (#28)
 - 전 스크립트 출력 메시지를 `git nb` / `git fb` alias 스타일로 통일
   (`bootstrap.sh`, `check-branch.sh`, `finish-branch.sh`, `new-branch.sh`) (#29)
+- `1-ADMIN_SETUP.md` §3 관리자 커맨드 안내 개선 (#33)
+- `PRD.md`의 `chmod` 명령어를 §3 개선 내용과 동기화 (#34)
+- 기존 스크립트(new-branch, finish-branch, cleanup-merged, check-branch)가
+  `$DEFAULT_BRANCH` 변수 사용 (#35)
+- `bootstrap.sh`에 `sync-main` alias 추가 (#35)
+- `1-ADMIN_SETUP.md` Step 2-1에 파일 복사 통합, Step 3 재구성 (#36)
+- 문서 분리: `2-MEMBER_SETUP` → `2a`(Single) + `2b`(Two),
+  `3-DAILY_WORKFLOW` → `3a`(Single) + `3b`(Two) (#35)
+- `PRD.md` → `PRD-v1.0.md` rename (#41)
+- `cleanup-merged.sh` signal 3 재설계 — 기존 `gh pr list --state merged` 벌크 조회를
+  `--head <branch>` per-branch 역방향 조회 + `headRefOid` SHA 정확 일치 검증으로 전환.
+  브랜치명 재사용(1차 머지 후 같은 이름 재생성) 오탐 차단, `PR_MERGED_CACHE` associative
+  array로 API 호출 캐싱. 14개 시나리오 트레이싱 검증 완료 (#42, ADR-010)
 
 ### Fixed
 - `git nb` 인터랙티브 type 선택 메뉴가 특정 방향키 입력 시 silent exit되던 버그.
@@ -46,5 +71,6 @@
 - 가이드 문서: `README.md`, `1-ADMIN_SETUP.md`, `2-MEMBER_SETUP.md`,
   `3-DAILY_WORKFLOW.md`, `TROUBLESHOOTING.md`
 
-[Unreleased]: https://github.com/Seongyul-Lee/branch-strategy-kit/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Seongyul-Lee/branch-strategy-kit/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Seongyul-Lee/branch-strategy-kit/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Seongyul-Lee/branch-strategy-kit/releases/tag/v1.0.0
