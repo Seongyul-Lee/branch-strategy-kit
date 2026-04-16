@@ -133,7 +133,7 @@ echo "복사 대상 경로: $TARGET_DIR"
 printf '키트를 적용하실 경로가 맞습니까? [y/N]: '
 
 if [[ -t 0 ]]; then
-  read -r CONFIRM
+  read -r CONFIRM < /dev/tty
 else
   echo ""
   echo "❌ 인터랙티브 모드에서만 실행할 수 있습니다 (TTY 필요)." >&2
@@ -175,7 +175,10 @@ copy_single_file() {
     echo ""
     printf "  v${KIT_VERSION}으로 업데이트하려면 덮어쓰기가 필요합니다. 덮어쓸까요? [y/N]: "
     local answer
-    read -r answer
+    # NOTE: stdin이 상위 while 루프의 find 출력으로 점령돼 있으므로
+    # 사용자 입력은 /dev/tty에서 직접 읽어야 한다. 그렇지 않으면
+    # find가 뱉은 다음 경로가 answer에 들어가 조용히 건너뛴다.
+    read -r answer < /dev/tty
     if [[ "${answer,,}" != "y" ]]; then
       echo "  ⏭️  $rel (건너뜀)"
       SKIPPED=$((SKIPPED + 1))
