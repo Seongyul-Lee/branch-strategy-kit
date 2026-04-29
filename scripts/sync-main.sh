@@ -91,13 +91,14 @@ if ! git pull --ff-only; then
   exit 1
 fi
 
-# main 비교 ref 결정 (로컬 main 우선, 없으면 origin/main)
-# rev-list가 ref 부재 시 silent 0으로 폴백 → "변경 없음" 오탐을 방지하기 위해 명시 검증.
+# main 비교 ref 결정 (origin/main 우선, 없으면 로컬 main)
+# 방금 fetch한 origin/main이 항상 최신이라 stale 로컬 main으로 인한 커밋 개수/요약
+# 오류를 방지한다. rev-list가 ref 부재 시 silent 0으로 폴백 → "변경 없음" 오탐도 차단.
 git fetch origin main --quiet 2>/dev/null || true
-if git show-ref --verify --quiet "refs/heads/main"; then
-  MAIN_REF="main"
-elif git show-ref --verify --quiet "refs/remotes/origin/main"; then
+if git show-ref --verify --quiet "refs/remotes/origin/main"; then
   MAIN_REF="origin/main"
+elif git show-ref --verify --quiet "refs/heads/main"; then
+  MAIN_REF="main"
 else
   echo "❌ main 브랜치를 찾을 수 없습니다 (로컬도 origin/main도 없음)." >&2
   echo "   sync-main은 main을 릴리스 브랜치로 전제합니다. 원격/로컬 상태를 확인하세요." >&2

@@ -73,12 +73,20 @@ if [[ -n "$DIRTY" ]]; then
   echo "[커밋되지 않은 변경사항]"
   echo "$DIRTY" | sed 's/^/  /'
   echo ""
-  # TTY 가드: 비대화형(CI, redirect, GUI hook) 환경에서는 안전하게 거부.
+  # TTY 가드: 입력은 stdin이 아니라 /dev/tty 에서 직접 받는다.
+  # 따라서 stdin(-t 0) 여부로 거부하지 말고, /dev/tty 접근 가능 여부를 필수로 검사한다.
+  # 또한 프롬프트를 사용자에게 보여줄 수 있도록 stdout 또는 stderr 중 하나는 TTY여야 한다.
   # set -e 환경에서 read </dev/tty 실패 시 즉시 종료를 회피하기 위해 사전 검사.
-  if [[ ! -t 0 || ! -r /dev/tty ]]; then
-    echo "❌ 인터랙티브 확인이 필요한데 TTY를 찾을 수 없습니다 (non-interactive shell)." >&2
+  if [[ ! -r /dev/tty ]]; then
+    echo "❌ 인터랙티브 확인이 필요한데 /dev/tty 에 접근할 수 없습니다." >&2
     echo "   미커밋 변경이 있어 확인 프롬프트를 띄워야 합니다." >&2
-    echo "   먼저 변경 사항을 커밋하거나 인터랙티브 셸에서 다시 실행하세요." >&2
+    echo "   먼저 변경 사항을 커밋하거나 터미널에서 다시 실행하세요." >&2
+    exit 1
+  fi
+  if [[ ! -t 1 && ! -t 2 ]]; then
+    echo "❌ 인터랙티브 확인이 필요한데 프롬프트를 표시할 TTY 출력이 없습니다." >&2
+    echo "   미커밋 변경이 있어 확인 프롬프트를 띄워야 합니다." >&2
+    echo "   먼저 변경 사항을 커밋하거나 터미널에서 다시 실행하세요." >&2
     exit 1
   fi
   read -r -p "원격에 push 및 PR 생성하시겠습니까? [y/N]: " CONFIRM </dev/tty
