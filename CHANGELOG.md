@@ -15,6 +15,26 @@
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-04-29
+
+### Changed
+- `finish-branch.sh` (`git fb`) — 미커밋 변경 처리를 hard block에서 `[커밋된 변경사항]` /
+  `[커밋되지 않은 변경사항]` 표시 + `[y/N]` 프롬프트로 변경. 워킹트리가 깨끗하면 프롬프트
+  없이 그대로 push. `/dev/tty` 접근 가능 여부와 stdout/stderr TTY 출력 가드, `--no-pr`
+  모드별 프롬프트 문구 분기 포함 (#46)
+
+### Fixed
+- `install.sh` — `find` 출력이 stdin을 가로채 인터랙티브 프롬프트가 동작하지 않던 버그.
+  read 입력을 `/dev/tty` 에서 직접 받도록 변경 (#45)
+- `sync-main.sh` — `DEFAULT_BRANCH` 검증을 `develop` 화이트리스트로 강화. checkout 전
+  로컬·origin 가드와 `git pull --ff-only` 실패 처리, `MAIN_REF` 동적 결정(origin/main
+  freshness 추적), `git fetch` 실패 시 묵살 대신 명시적 에러 + exit 1 (#46)
+- `cleanup-merged.sh` — `set -euo pipefail` 직후 Bash 4+ 가드 명시화, `DEFAULT_BRANCH`
+  checkout 가드 추가, `grep -qx` 비교 5곳을 `grep -Fxq --` 로 안전화하여 메타문자/하이픈
+  시작 브랜치명 오동작 차단, fetch 실패 명시 처리 (#46)
+- `verify-invariant.sh` — `extract_readme_types()` 파이프라인을 브레이스 그룹 + `|| true`
+  로 감싸 README grep 실패 시 `set -e`/pipefail 즉사로 검증이 중단되던 문제 해결 (#46)
+
 ## [1.1.0] - 2026-04-14
 
 ### Added
@@ -71,6 +91,7 @@
 - 가이드 문서: `README.md`, `1-ADMIN_SETUP.md`, `2-MEMBER_SETUP.md`,
   `3-DAILY_WORKFLOW.md`, `TROUBLESHOOTING.md`
 
-[Unreleased]: https://github.com/Seongyul-Lee/branch-strategy-kit/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Seongyul-Lee/branch-strategy-kit/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/Seongyul-Lee/branch-strategy-kit/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Seongyul-Lee/branch-strategy-kit/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Seongyul-Lee/branch-strategy-kit/releases/tag/v1.0.0
