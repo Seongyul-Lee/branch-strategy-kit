@@ -36,10 +36,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Single-trunk 모드 체크
-if [[ "$DEFAULT_BRANCH" == "main" ]]; then
-  echo "❌ Single-trunk 모드에서는 sync-main을 사용할 수 없습니다."
-  echo "   Two-branch 모드를 사용하려면 .kit-config에서 DEFAULT_BRANCH=develop으로 변경하세요."
+# DEFAULT_BRANCH 검증: develop 일 때만 실행 (master, 오타 등 차단)
+if [[ "$DEFAULT_BRANCH" != "develop" ]]; then
+  echo "❌ sync-main은 DEFAULT_BRANCH=develop 일 때만 사용할 수 있습니다."
+  echo "   현재 설정값: ${DEFAULT_BRANCH}"
+  echo "   .kit-config에서 DEFAULT_BRANCH=develop으로 설정하세요."
   exit 1
 fi
 
@@ -63,14 +64,27 @@ if [[ -n "$TAG" ]]; then
   fi
 fi
 
-# develop으로 전환 + 최신화
+# develop으로 전환 + 최신화 (로컬 미존재 시 origin에서 추적 브랜치 생성)
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [[ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]]; then
   echo "🔍 $DEFAULT_BRANCH 브랜치로 전환 중..."
-  git checkout "$DEFAULT_BRANCH"
+  if git show-ref --verify --quiet "refs/heads/$DEFAULT_BRANCH"; then
+    git checkout "$DEFAULT_BRANCH"
+  elif git show-ref --verify --quiet "refs/remotes/origin/$DEFAULT_BRANCH"; then
+    echo "   로컬에 $DEFAULT_BRANCH 브랜치가 없어 원격에서 추적 브랜치를 생성합니다..."
+    git checkout -b "$DEFAULT_BRANCH" --track "origin/$DEFAULT_BRANCH"
+  else
+    echo "❌ 로컬 브랜치 '$DEFAULT_BRANCH'이 없고 origin/$DEFAULT_BRANCH도 찾을 수 없습니다." >&2
+    echo "   원격 저장소를 fetch 했는지, .kit-config의 DEFAULT_BRANCH 설정이 올바른지 확인하세요." >&2
+    exit 1
+  fi
 fi
 echo "🔍 $DEFAULT_BRANCH 브랜치 최신화 중..."
-git pull --ff-only
+if ! git pull --ff-only; then
+  echo "❌ '$DEFAULT_BRANCH' 브랜치 최신화에 실패했습니다." >&2
+  echo "   upstream 설정 또는 원격 상태를 확인하세요." >&2
+  exit 1
+fi
 
 # main과의 차이 확인
 COMMITS_AHEAD=$(git rev-list --count main.."$DEFAULT_BRANCH" 2>/dev/null || echo "0")

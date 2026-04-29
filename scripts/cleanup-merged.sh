@@ -16,6 +16,12 @@
 
 set -euo pipefail
 
+if (( ${BASH_VERSINFO[0]:-0} < 4 )); then
+  echo "❌ 이 스크립트는 Bash 4 이상이 필요합니다. 현재: ${BASH_VERSION:-unknown}" >&2
+  echo "   macOS 기본 /bin/bash(3.2)에서는 동작하지 않습니다. 최신 bash로 다시 실행하세요." >&2
+  exit 1
+fi
+
 source "$(dirname "${BASH_SOURCE[0]}")/_config.sh"
 
 PROTECTED_BRANCHES=$(echo "main master develop $DEFAULT_BRANCH" | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/ $//')
@@ -65,9 +71,18 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# DEFAULT_BRANCH 최신화
+# DEFAULT_BRANCH 최신화 (로컬 미존재 시 origin에서 추적 브랜치 생성)
 echo "🔍 $DEFAULT_BRANCH 브랜치 최신화 중..."
-git checkout "$DEFAULT_BRANCH"
+if git show-ref --verify --quiet "refs/heads/$DEFAULT_BRANCH"; then
+  git checkout "$DEFAULT_BRANCH"
+elif git show-ref --verify --quiet "refs/remotes/origin/$DEFAULT_BRANCH"; then
+  echo "   로컬에 $DEFAULT_BRANCH 브랜치가 없어 원격에서 추적 브랜치를 생성합니다..."
+  git checkout -b "$DEFAULT_BRANCH" --track "origin/$DEFAULT_BRANCH"
+else
+  echo "❌ 로컬 브랜치 '$DEFAULT_BRANCH'이 없고 origin/$DEFAULT_BRANCH도 찾을 수 없습니다." >&2
+  echo "   원격 저장소를 fetch 했는지, .kit-config의 DEFAULT_BRANCH 설정이 올바른지 확인하세요." >&2
+  exit 1
+fi
 git pull --ff-only
 
 echo "🔍 원격 추적 정보 정리 중 (git fetch -p)..."
@@ -219,12 +234,12 @@ fi
 # 가장 구체적인 사유 하나만 표기 (실제 삭제 분기 로직과 동일 우선순위).
 detect_reason() {
   local branch="$1"
-  if echo "$MERGED" | grep -qx "$branch"; then
+  if printf '%s\n' "$MERGED" | grep -Fxq -- "$branch"; then
     echo "merged"
-  elif echo "$PR_MERGED" | grep -qx "$branch"; then
+  elif printf '%s\n' "$PR_MERGED" | grep -Fxq -- "$branch"; then
     # 삭제 단계에서 `git push origin --delete`로 원격도 정리 필요.
     echo "PR merged on GitHub — origin still alive"
-  elif echo "$GONE" | grep -qx "$branch"; then
+  elif printf '%s\n' "$GONE" | grep -Fxq -- "$branch"; then
     # GONE 브랜치는 원격 사라짐만으론 머지 여부를 알 수 없다.
     # headRefOid 일치 확인으로 실제 머지/미머지를 구분 (오탐 차단).
     if is_pr_merged_for_branch "$branch"; then
@@ -274,14 +289,14 @@ echo ""
 while IFS= read -r BRANCH; do
   [[ -z "$BRANCH" ]] && continue
 
-  if echo "$MERGED" | grep -qx "$BRANCH"; then
+  if printf '%s\n' "$MERGED" | grep -Fxq -- "$BRANCH"; then
     if git branch -d "$BRANCH" 2>/dev/null; then
       echo "✅ $BRANCH 삭제 완료 (merged)"
     else
       git branch -D "$BRANCH"
       echo "✅ $BRANCH 삭제 완료 (forced)"
     fi
-  elif echo "$PR_MERGED" | grep -qx "$BRANCH"; then
+  elif printf '%s\n' "$PR_MERGED" | grep -Fxq -- "$BRANCH"; then
     # 원격 브랜치 정리 (실패해도 로컬 삭제는 계속 진행)
     if git push origin --delete "$BRANCH" >/dev/null 2>&1; then
       echo "   🌐 원격 브랜치도 삭제: origin/$BRANCH"

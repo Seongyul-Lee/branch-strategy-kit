@@ -155,12 +155,16 @@ extract_pr_template_types() {
 }
 
 # 7. README.md — inline backtick list
+# README 문구가 변경되어 매칭 실패 시 빈 결과를 반환 (set -e/pipefail 즉사 방지).
+# 빈 결과는 check_tier_a()에서 FAIL로 카운트된다.
 extract_readme_types() {
-  grep '허용되는 브랜치 type' "$ROOT_DIR/README.md" \
-    | grep -oE '`[a-z]+`' \
-    | tr -d '`' \
-    | tr -d '\r' \
-    | sort
+  {
+    grep '허용되는 브랜치 type' "$ROOT_DIR/README.md" 2>/dev/null \
+      | grep -oE '`[a-z]+`' \
+      | tr -d '`' \
+      | tr -d '\r' \
+      | sort
+  } || true
 }
 
 # ── Tier A 실행 ──
