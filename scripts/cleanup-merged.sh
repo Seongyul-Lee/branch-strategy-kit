@@ -73,9 +73,15 @@ done
 
 # DEFAULT_BRANCH 최신화 (로컬 미존재 시 origin에서 추적 브랜치 생성)
 # 가드 전 fetch: refs/remotes/origin/$DEFAULT_BRANCH가 stale/미존재 상태에서
-# "origin도 없음"으로 오탐 종료하는 것을 방지.
+# "origin도 없음"으로 오탐 종료하는 것을 방지. fetch 실패는 stale ref 위에서
+# 잘못 판단하지 않도록 명시적으로 종료한다.
 echo "🔍 원격 정보 최신화 중..."
-git fetch origin "$DEFAULT_BRANCH" --quiet 2>/dev/null || true
+if ! git fetch origin "$DEFAULT_BRANCH" --quiet; then
+  echo "❌ origin/$DEFAULT_BRANCH fetch에 실패했습니다." >&2
+  echo "   원격 접근/인증 문제 또는 네트워크 오류로 원격 ref를 최신화하지 못했습니다." >&2
+  echo "   stale ref를 기준으로 잘못 판단하지 않도록 스크립트를 종료합니다." >&2
+  exit 1
+fi
 
 echo "🔍 $DEFAULT_BRANCH 브랜치 최신화 중..."
 if git show-ref --verify --quiet "refs/heads/$DEFAULT_BRANCH"; then

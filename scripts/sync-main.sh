@@ -66,9 +66,14 @@ fi
 
 # develop으로 전환 + 최신화 (로컬 미존재 시 origin에서 추적 브랜치 생성)
 # 가드 전 fetch: refs/remotes/origin/$DEFAULT_BRANCH가 stale/미존재 상태에서
-# "origin도 없음"으로 오탐 종료하는 것을 방지.
+# "origin도 없음"으로 오탐 종료하는 것을 방지. fetch 실패는 stale ref 위에서
+# 잘못 판단하지 않도록 명시적으로 종료한다.
 echo "🔍 원격 정보 최신화 중..."
-git fetch origin "$DEFAULT_BRANCH" --quiet 2>/dev/null || true
+if ! git fetch origin "$DEFAULT_BRANCH" --quiet; then
+  echo "❌ origin/$DEFAULT_BRANCH fetch에 실패했습니다." >&2
+  echo "   원격 접근/인증 상태 또는 네트워크 연결을 확인하세요." >&2
+  exit 1
+fi
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [[ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]]; then
@@ -91,17 +96,29 @@ if ! git pull --ff-only; then
   exit 1
 fi
 
-# main 비교 ref 결정 (origin/main 우선, 없으면 로컬 main)
-# 방금 fetch한 origin/main이 항상 최신이라 stale 로컬 main으로 인한 커밋 개수/요약
-# 오류를 방지한다. rev-list가 ref 부재 시 silent 0으로 폴백 → "변경 없음" 오탐도 차단.
-git fetch origin main --quiet 2>/dev/null || true
-if git show-ref --verify --quiet "refs/remotes/origin/main"; then
+# main 비교 ref 결정 (fetch 성공 시 origin/main 우선, 실패 시 로컬 main 폴백)
+# fetch 실패를 무시하면 stale origin/main 으로 rev-list/git log 결과가 왜곡되므로
+# freshness를 추적해 안전한 기준점만 사용한다.
+MAIN_FRESH=0
+if git fetch origin main --quiet 2>/dev/null; then
+  MAIN_FRESH=1
+else
+  echo "⚠️  origin/main 최신화에 실패했습니다. 로컬 main으로만 비교를 시도합니다." >&2
+  echo "   네트워크/권한/원격 상태를 확인하세요." >&2
+fi
+
+if [[ "$MAIN_FRESH" -eq 1 ]] && git show-ref --verify --quiet "refs/remotes/origin/main"; then
   MAIN_REF="origin/main"
 elif git show-ref --verify --quiet "refs/heads/main"; then
   MAIN_REF="main"
+elif git show-ref --verify --quiet "refs/remotes/origin/main"; then
+  echo "❌ origin/main은 존재하지만 최신화에 실패해 freshness를 보장할 수 없습니다." >&2
+  echo "   stale ref를 기준으로 커밋 개수/요약이 왜곡될 수 있어 종료합니다." >&2
+  echo "   원격 접근을 복구하거나 로컬 main 브랜치를 준비한 뒤 다시 시도하세요." >&2
+  exit 1
 else
   echo "❌ main 브랜치를 찾을 수 없습니다 (로컬도 origin/main도 없음)." >&2
-  echo "   sync-main은 main을 릴리스 브랜치로 전제합니다. 원격/로컬 상태를 확인하세요." >&2
+  echo "   sync-main은 main을 릴리스 브랜치로 전제합니다." >&2
   exit 1
 fi
 

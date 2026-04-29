@@ -89,7 +89,12 @@ if [[ -n "$DIRTY" ]]; then
     echo "   먼저 변경 사항을 커밋하거나 터미널에서 다시 실행하세요." >&2
     exit 1
   fi
-  read -r -p "원격에 push 및 PR 생성하시겠습니까? [y/N]: " CONFIRM </dev/tty
+  if [[ $NO_PR -eq 1 ]]; then
+    PROMPT_MSG="원격에 push 하시겠습니까 (PR 생성은 생략)? [y/N]: "
+  else
+    PROMPT_MSG="원격에 push 및 PR 생성하시겠습니까? [y/N]: "
+  fi
+  read -r -p "$PROMPT_MSG" CONFIRM </dev/tty
   if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
     echo "취소되었습니다."
     exit 0
