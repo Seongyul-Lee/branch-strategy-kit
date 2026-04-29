@@ -50,27 +50,55 @@ if [[ ! "$BRANCH" =~ $PATTERN ]]; then
   exit 1
 fi
 
-# 커밋되지 않은 변경 확인
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "⚠️  커밋되지 않은 변경 사항이 있습니다:"
-  git status --short
-  echo ""
-  echo "   계속하려면 먼저 커밋하세요:"
-  echo "   git add . && git commit -m \"<type>: ...\""
-  exit 1
-fi
-
 # 커밋 1개 이상 있는지 확인
 if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
   echo "❌ 아직 커밋이 없습니다. 먼저 커밋을 만드세요."
   exit 1
 fi
 
-# main과의 차이가 있는지
+# DEFAULT_BRANCH 대비 커밋 차이 확인
 COMMITS_AHEAD=$(git rev-list --count "$DEFAULT_BRANCH"..HEAD 2>/dev/null || echo "0")
 if [[ "$COMMITS_AHEAD" == "0" ]]; then
   echo "❌ $DEFAULT_BRANCH 대비 커밋이 없습니다. 먼저 작업을 커밋하세요."
   exit 1
+fi
+
+# 커밋되지 않은 변경 사항이 있을 때만 사용자 확인 (push는 커밋만 전송하므로 안전).
+# 미커밋 변경이 없으면 그대로 push 진행.
+DIRTY=$(git status --porcelain)
+if [[ -n "$DIRTY" ]]; then
+  echo "[커밋된 변경사항]"
+  git log --oneline "$DEFAULT_BRANCH"..HEAD | sed 's/^/  /'
+  echo ""
+  echo "[커밋되지 않은 변경사항]"
+  echo "$DIRTY" | sed 's/^/  /'
+  echo ""
+  # TTY 가드: 입력은 stdin이 아니라 /dev/tty 에서 직접 받는다.
+  # 따라서 stdin(-t 0) 여부로 거부하지 말고, /dev/tty 접근 가능 여부를 필수로 검사한다.
+  # 또한 프롬프트를 사용자에게 보여줄 수 있도록 stdout 또는 stderr 중 하나는 TTY여야 한다.
+  # set -e 환경에서 read </dev/tty 실패 시 즉시 종료를 회피하기 위해 사전 검사.
+  if [[ ! -r /dev/tty ]]; then
+    echo "❌ 인터랙티브 확인이 필요한데 /dev/tty 에 접근할 수 없습니다." >&2
+    echo "   미커밋 변경이 있어 확인 프롬프트를 띄워야 합니다." >&2
+    echo "   먼저 변경 사항을 커밋하거나 터미널에서 다시 실행하세요." >&2
+    exit 1
+  fi
+  if [[ ! -t 1 && ! -t 2 ]]; then
+    echo "❌ 인터랙티브 확인이 필요한데 프롬프트를 표시할 TTY 출력이 없습니다." >&2
+    echo "   미커밋 변경이 있어 확인 프롬프트를 띄워야 합니다." >&2
+    echo "   먼저 변경 사항을 커밋하거나 터미널에서 다시 실행하세요." >&2
+    exit 1
+  fi
+  if [[ $NO_PR -eq 1 ]]; then
+    PROMPT_MSG="원격에 push 하시겠습니까 (PR 생성은 생략)? [y/N]: "
+  else
+    PROMPT_MSG="원격에 push 및 PR 생성하시겠습니까? [y/N]: "
+  fi
+  read -r -p "$PROMPT_MSG" CONFIRM </dev/tty
+  if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
+    echo "취소되었습니다."
+    exit 0
+  fi
 fi
 
 # push
