@@ -73,6 +73,14 @@ if [[ -n "$DIRTY" ]]; then
   echo "[커밋되지 않은 변경사항]"
   echo "$DIRTY" | sed 's/^/  /'
   echo ""
+  # TTY 가드: 비대화형(CI, redirect, GUI hook) 환경에서는 안전하게 거부.
+  # set -e 환경에서 read </dev/tty 실패 시 즉시 종료를 회피하기 위해 사전 검사.
+  if [[ ! -t 0 || ! -r /dev/tty ]]; then
+    echo "❌ 인터랙티브 확인이 필요한데 TTY를 찾을 수 없습니다 (non-interactive shell)." >&2
+    echo "   미커밋 변경이 있어 확인 프롬프트를 띄워야 합니다." >&2
+    echo "   먼저 변경 사항을 커밋하거나 인터랙티브 셸에서 다시 실행하세요." >&2
+    exit 1
+  fi
   read -r -p "원격에 push 및 PR 생성하시겠습니까? [y/N]: " CONFIRM </dev/tty
   if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
     echo "취소되었습니다."

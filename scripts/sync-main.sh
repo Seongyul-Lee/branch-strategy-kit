@@ -65,6 +65,11 @@ if [[ -n "$TAG" ]]; then
 fi
 
 # develop으로 전환 + 최신화 (로컬 미존재 시 origin에서 추적 브랜치 생성)
+# 가드 전 fetch: refs/remotes/origin/$DEFAULT_BRANCH가 stale/미존재 상태에서
+# "origin도 없음"으로 오탐 종료하는 것을 방지.
+echo "🔍 원격 정보 최신화 중..."
+git fetch origin "$DEFAULT_BRANCH" --quiet 2>/dev/null || true
+
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [[ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]]; then
   echo "🔍 $DEFAULT_BRANCH 브랜치로 전환 중..."
@@ -75,7 +80,7 @@ if [[ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]]; then
     git checkout -b "$DEFAULT_BRANCH" --track "origin/$DEFAULT_BRANCH"
   else
     echo "❌ 로컬 브랜치 '$DEFAULT_BRANCH'이 없고 origin/$DEFAULT_BRANCH도 찾을 수 없습니다." >&2
-    echo "   원격 저장소를 fetch 했는지, .kit-config의 DEFAULT_BRANCH 설정이 올바른지 확인하세요." >&2
+    echo "   원격 저장소 접근 가능 여부와 .kit-config의 DEFAULT_BRANCH 설정을 확인하세요." >&2
     exit 1
   fi
 fi
@@ -86,8 +91,21 @@ if ! git pull --ff-only; then
   exit 1
 fi
 
+# main 비교 ref 결정 (로컬 main 우선, 없으면 origin/main)
+# rev-list가 ref 부재 시 silent 0으로 폴백 → "변경 없음" 오탐을 방지하기 위해 명시 검증.
+git fetch origin main --quiet 2>/dev/null || true
+if git show-ref --verify --quiet "refs/heads/main"; then
+  MAIN_REF="main"
+elif git show-ref --verify --quiet "refs/remotes/origin/main"; then
+  MAIN_REF="origin/main"
+else
+  echo "❌ main 브랜치를 찾을 수 없습니다 (로컬도 origin/main도 없음)." >&2
+  echo "   sync-main은 main을 릴리스 브랜치로 전제합니다. 원격/로컬 상태를 확인하세요." >&2
+  exit 1
+fi
+
 # main과의 차이 확인
-COMMITS_AHEAD=$(git rev-list --count main.."$DEFAULT_BRANCH" 2>/dev/null || echo "0")
+COMMITS_AHEAD=$(git rev-list --count "${MAIN_REF}..${DEFAULT_BRANCH}" 2>/dev/null || echo "0")
 if [[ "$COMMITS_AHEAD" == "0" ]]; then
   echo "✅ main 대비 변경 사항이 없습니다."
   exit 0
@@ -113,7 +131,7 @@ echo "📝 develop→main PR 생성 중..."
 
 if [[ -n "$TAG" ]]; then
   # 릴리스 태그 모드: 커밋 요약을 본문에 포함
-  COMMIT_LOG=$(git log --oneline main.."$DEFAULT_BRANCH" | head -20)
+  COMMIT_LOG=$(git log --oneline "${MAIN_REF}..${DEFAULT_BRANCH}" | head -20)
   PR_BODY="## Release ${TAG}
 
 ### 포함된 변경 사항

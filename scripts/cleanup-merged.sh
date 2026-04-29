@@ -72,6 +72,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 # DEFAULT_BRANCH 최신화 (로컬 미존재 시 origin에서 추적 브랜치 생성)
+# 가드 전 fetch: refs/remotes/origin/$DEFAULT_BRANCH가 stale/미존재 상태에서
+# "origin도 없음"으로 오탐 종료하는 것을 방지.
+echo "🔍 원격 정보 최신화 중..."
+git fetch origin "$DEFAULT_BRANCH" --quiet 2>/dev/null || true
+
 echo "🔍 $DEFAULT_BRANCH 브랜치 최신화 중..."
 if git show-ref --verify --quiet "refs/heads/$DEFAULT_BRANCH"; then
   git checkout "$DEFAULT_BRANCH"
@@ -80,7 +85,7 @@ elif git show-ref --verify --quiet "refs/remotes/origin/$DEFAULT_BRANCH"; then
   git checkout -b "$DEFAULT_BRANCH" --track "origin/$DEFAULT_BRANCH"
 else
   echo "❌ 로컬 브랜치 '$DEFAULT_BRANCH'이 없고 origin/$DEFAULT_BRANCH도 찾을 수 없습니다." >&2
-  echo "   원격 저장소를 fetch 했는지, .kit-config의 DEFAULT_BRANCH 설정이 올바른지 확인하세요." >&2
+  echo "   원격 저장소 접근 가능 여부와 .kit-config의 DEFAULT_BRANCH 설정을 확인하세요." >&2
   exit 1
 fi
 git pull --ff-only
