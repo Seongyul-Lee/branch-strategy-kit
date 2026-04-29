@@ -50,27 +50,34 @@ if [[ ! "$BRANCH" =~ $PATTERN ]]; then
   exit 1
 fi
 
-# 커밋되지 않은 변경 확인
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "⚠️  커밋되지 않은 변경 사항이 있습니다:"
-  git status --short
-  echo ""
-  echo "   계속하려면 먼저 커밋하세요:"
-  echo "   git add . && git commit -m \"<type>: ...\""
-  exit 1
-fi
-
 # 커밋 1개 이상 있는지 확인
 if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
   echo "❌ 아직 커밋이 없습니다. 먼저 커밋을 만드세요."
   exit 1
 fi
 
-# main과의 차이가 있는지
+# DEFAULT_BRANCH 대비 커밋 차이 확인
 COMMITS_AHEAD=$(git rev-list --count "$DEFAULT_BRANCH"..HEAD 2>/dev/null || echo "0")
 if [[ "$COMMITS_AHEAD" == "0" ]]; then
   echo "❌ $DEFAULT_BRANCH 대비 커밋이 없습니다. 먼저 작업을 커밋하세요."
   exit 1
+fi
+
+# 커밋되지 않은 변경 사항이 있을 때만 사용자 확인 (push는 커밋만 전송하므로 안전).
+# 미커밋 변경이 없으면 그대로 push 진행.
+DIRTY=$(git status --porcelain)
+if [[ -n "$DIRTY" ]]; then
+  echo "[커밋된 변경사항]"
+  git log --oneline "$DEFAULT_BRANCH"..HEAD | sed 's/^/  /'
+  echo ""
+  echo "[커밋되지 않은 변경사항]"
+  echo "$DIRTY" | sed 's/^/  /'
+  echo ""
+  read -r -p "원격에 push 및 PR 생성하시겠습니까? [y/N]: " CONFIRM </dev/tty
+  if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
+    echo "취소되었습니다."
+    exit 0
+  fi
 fi
 
 # push
