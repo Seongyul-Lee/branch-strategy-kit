@@ -76,7 +76,7 @@ echo ""
 
 # ── Tier A: 필수 검증 ──
 
-TIER_A_EXPECTED=7
+TIER_A_EXPECTED=6
 echo "── Tier A: 필수 검증 (${TIER_A_EXPECTED}곳) ──"
 
 check_tier_a() {
@@ -175,13 +175,12 @@ check_tier_a "scripts/new-branch.sh" "$(extract_new_branch_types)"
 check_tier_a ".github/workflows/branch-name-check.yml" "$(extract_branch_name_check_types)"
 check_tier_a ".github/workflows/pr-title-check.yml" "$(extract_pr_title_check_types)"
 check_tier_a ".github/pull_request_template.md" "$(extract_pr_template_types)"
-check_tier_a "README.md" "$(extract_readme_types)"
 
 echo ""
 
 # ── Tier B: 가이드 문서 검증 ──
 
-TIER_B_EXPECTED=4
+TIER_B_EXPECTED=5
 echo "── Tier B: 가이드 문서 검증 (${TIER_B_EXPECTED}곳) ──"
 
 check_tier_b() {
@@ -215,6 +214,7 @@ check_tier_b() {
   fi
 }
 
+check_tier_b "README.md"
 check_tier_b "3a-DAILY_WORKFLOW_SINGLE.md"
 check_tier_b "3b-DAILY_WORKFLOW_TWO.md"
 check_tier_b "2a-MEMBER_SETUP_SINGLE.md"
