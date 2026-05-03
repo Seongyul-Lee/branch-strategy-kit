@@ -61,18 +61,24 @@
 
 ---
 
-## v1.1.1 이후 — Unreleased
+## v1.1.2 — Linux apt 지원 및 설치 흐름 개선 (2026-05-03)
 
-> 한 줄 요약: **다운스트림 프로젝트에 `install.sh`가 깔리면서 드러난 두 가지를 정리합니다.** 정식 릴리스 전 상태입니다.
+> 한 줄 요약: **Ubuntu/Debian 등 apt 기반 Linux에서 `bootstrap.sh`가 처음부터 동작하고, 다운스트림 이식 시 발생하던 두 가지 막힘을 해소합니다.**
 
-### 변경
+### 새로 생긴 것
 
-- **`install.sh` 실행 권한 부여** — 클린 체크아웃 직후 가이드대로 `~/branch-strategy-kit/install.sh`를 실행하면 `Permission denied`가 나던 문제 해결. (#49)
-- **README 일관성 검증을 필수 → 권장으로 완화** — `install.sh`가 README를 복사하지 않는데도 Tier A 필수 검증에 들어 있어, 다운스트림에서는 항상 실패하던 모순을 바로잡았습니다. Tier B(권장)로 옮겨 본 레포는 그대로 통과, 다운스트림은 SKIP/WARN으로 흡수됩니다. (#48)
+- **`bootstrap.sh` — apt 기반 Linux 지원** — Ubuntu/Debian 환경에서 `gh`와 `lefthook`을 설치할 수 없던 문제를 해결했습니다. `gh`는 `apt-get`으로, `lefthook`은 공식 패키지가 없어 GitHub Releases 바이너리를 직접 내려받습니다. dnf·pacman 환경도 동일하게 지원합니다.
+
+### 버그 수정
+
+- **`install.sh` 실행 권한 누락** — 클린 체크아웃 직후 `Permission denied`가 나던 문제 해결. (#49)
+- **`verify-invariant.sh` README 검사 완화** — `install.sh`가 README를 복사하지 않는데도 Tier A 필수 검증에 들어 있어 다운스트림에서 항상 실패하던 모순을 바로잡았습니다. Tier B(권장)로 이동. (#48)
+- **`bootstrap.sh` sudo 감지 오류** — 복합 명령에 sudo가 포함된 경우를 감지하지 못하던 버그 수정.
 
 ---
 
 ### 업그레이드 안내
 
+- **v1.1.1 → v1.1.2**: 별도 마이그레이션 없음. apt 기반 Linux 사용자는 `bootstrap.sh`를 다시 실행하세요.
 - **v1.1.0 → v1.1.1**: 별도 마이그레이션 없음. 기존 동작 그대로 + `git fb`가 덜 막히게 동작합니다.
 - **v1.0.x → v1.1.0**: Single-branch 팀은 변경 없이 동작합니다. Two-branch로 전환하려면 `.kit-config`의 `DEFAULT_BRANCH`만 바꾸세요.

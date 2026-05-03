@@ -17,10 +17,17 @@
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-05-03
+
+### Added
+- `scripts/bootstrap.sh` — apt 기반 Linux에서 `gh` 설치 명령(`apt-get`) 추가 (#50)
+- `scripts/bootstrap.sh` — `lefthook` apt·dnf·pacman 환경에서 공식 패키지 미존재로 GitHub Releases 바이너리 직접 설치 지원 (#50)
+
 ### Fixed
 - `install.sh` — 클린 체크아웃 직후 실행 시 `Permission denied` 발생. 파일에 실행 권한(+x) 부여 (#49)
 - `verify-invariant.sh` — README 일관성 검사를 Tier A(필수)에서 Tier B(권장)로 이동.
   `install.sh`가 README를 복사하지 않아 다운스트림에서 항상 실패하던 모순 해결 (#48)
+- `scripts/bootstrap.sh` — sudo 감지 조건을 `sudo*` → `*sudo*`로 수정, 복합 명령 내 sudo 포함 여부 올바르게 처리 (#50)
 
 ## [1.1.1] - 2026-04-29
 
@@ -115,7 +122,8 @@
 ### Removed
 - `test.txt` — 워크플로우 스모크 테스트용 임시 파일 삭제 (#23)
 
-[Unreleased]: https://github.com/Seongyul-Lee/branch-strategy-kit/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/Seongyul-Lee/branch-strategy-kit/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/Seongyul-Lee/branch-strategy-kit/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/Seongyul-Lee/branch-strategy-kit/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Seongyul-Lee/branch-strategy-kit/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Seongyul-Lee/branch-strategy-kit/releases/tag/v1.0.0
