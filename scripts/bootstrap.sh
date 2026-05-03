@@ -88,6 +88,7 @@ install_cmd() {
   local winget_flags="-e --accept-source-agreements --accept-package-agreements"
   case "${tool}:${pm}" in
     gh:brew)             echo "brew install gh" ;;
+    gh:apt)              echo "sudo apt-get update -qq && sudo apt-get install -y gh" ;;
     gh:winget)           echo "winget install --id GitHub.cli ${winget_flags}" ;;
     gh:scoop)            echo "scoop install gh" ;;
     gh:dnf)              echo "sudo dnf install -y gh" ;;
@@ -95,6 +96,10 @@ install_cmd() {
     lefthook:brew)       echo "brew install lefthook" ;;
     lefthook:winget)     echo "winget install --id evilmartians.lefthook ${winget_flags}" ;;
     lefthook:scoop)      echo "scoop install lefthook" ;;
+    # apt/dnf/pacman 에 공식 lefthook 패키지가 없으므로 GitHub Releases 바이너리를 직접 내려받는다.
+    # 단일 따옴표로 감싸 $() / ${} 를 eval 시점에 확장한다.
+    lefthook:apt|lefthook:dnf|lefthook:pacman)
+      echo '_arch=$(uname -m); [ "$_arch" = "aarch64" ] && _arch=arm64; curl -fsSL "https://github.com/evilmartians/lefthook/releases/latest/download/lefthook_Linux_${_arch}" -o /tmp/lefthook_bin && sudo install -m755 /tmp/lefthook_bin /usr/local/bin/lefthook' ;;
     *)                   echo "" ;;
   esac
 }
@@ -153,7 +158,7 @@ ensure_tool() {
   fi
 
   echo "   설치 명령: ${cmd}"
-  if [[ "$cmd" == sudo* ]]; then
+  if [[ "$cmd" == *sudo* ]]; then
     echo "   ⚠️  sudo 비밀번호 입력이 필요할 수 있습니다."
   fi
 

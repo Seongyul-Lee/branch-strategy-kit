@@ -1,10 +1,10 @@
 # branch-strategy-kit — Product Requirements Document
 
-> 최종 수정: 2026-04-11
-> 작성 기준: 코드베이스 `6489063` + 프로젝트 문서
+> 최종 수정: 2026-04-13
+> 작성 기준: 코드베이스 `4cb94ee` + 프로젝트 문서
 > 상태: 초안
-> PRD 작성자: Seongyul-Lee (이성율) — 기획·구현·문서
-> 킷 버전: v1.0.0 (VERSION 파일 기준)
+> PRD 작성자: Seongyul-Lee (이성율)
+> 킷 버전: v1.1.0 (VERSION 파일 기준)
 > 라이선스: MIT
 > 저장소: github.com/Seongyul-Lee/branch-strategy-kit
 > 목차: §1~§24 + 부록 A~D
@@ -13,7 +13,9 @@
 
 ## 1. 개요 (Executive Summary)
 
-**branch-strategy-kit**은 GitHub Flow 기반의 단명 브랜치 + Squash Merge 전략을 팀 프로젝트에 즉시 도입할 수 있는 재사용 가능한 자동화 킷이다. 셸 스크립트 7개, GitHub Actions 워크플로우 3개, lefthook 설정, PR 템플릿, 가이드 문서 5종으로 구성되며, 관리자가 15분, 팀원이 5분이면 전체 환경을 갖출 수 있다.
+**branch-strategy-kit**은 GitHub Flow 기반의 단명 브랜치 + Squash Merge 전략을 팀 프로젝트에 즉시 도입할 수 있는 재사용 가능한 자동화 킷이다. 셸 스크립트 11개, GitHub Actions 워크플로우 9개(user-facing 3 + kit-self CI 6), lefthook 설정, PR 템플릿, 가이드 문서 6종으로 구성되며, 관리자가 15분, 팀원이 5분이면 전체 환경을 갖출 수 있다.
+
+v1.1.0의 핵심 변경은 **Two-branch(develop/main) 모드 지원**이다. `.kit-config`에서 `DEFAULT_BRANCH`를 `develop`으로 전환하면 develop을 통합 브랜치, main을 릴리스 브랜치로 운영하는 이중 브랜치 전략을 사용할 수 있다. `install.sh`로 킷 파일 일괄 복사가 가능해졌고, `verify-invariant.sh`가 12곳의 type 목록 일관성을 자동 검증한다.
 
 이 킷은 브랜치명, 커밋 메시지, PR 제목에 대한 규칙을 문서가 아닌 **코드로 강제**한다. 서버(GitHub branch protection) → CI(GitHub Actions) → 클라이언트(lefthook) 3계층 방어선을 구축하여, Git/GitHub 숙련도와 무관하게 팀 전체가 일관된 워크플로우를 따르도록 보장한다.
 
@@ -57,10 +59,11 @@
 |------|---------------------|-------------|
 | **커버리지** | 브랜치 네이밍 + 커밋 메시지 + PR 제목 + 생성/종료/정리 스크립트 + CI + 로컬 훅을 올인원으로 제공 | 각 도구가 1~2개 영역만 담당하므로 3~4개 조합 필요 |
 | **의존성** | 순수 bash 기반. Node.js/Python/Rust 런타임 불필요 | commitlint(Node.js), Commitizen(Python), Cocogitto(Rust) 등 런타임 의존 |
-| **도입 방식** | 파일 복사 + `bootstrap.sh` 한 번 실행으로 완료 | 패키지 설치 + 설정 파일 작성 + 워크플로우 별도 구축 필요 |
+| **도입 방식** | `install.sh`로 일괄 복사 + `bootstrap.sh` 한 번 실행으로 완료 | 패키지 설치 + 설정 파일 작성 + 워크플로우 별도 구축 필요 |
 | **3계층 방어** | 서버(branch protection) → CI(Actions) → 클라이언트(lefthook) 통합 설계 | 대부분 단일 계층(훅만 또는 CI만) |
-| **워크플로우 자동화** | `git nb`/`git fb`/`git cleanup`으로 전체 사이클 커버 | 대부분 검증만 제공하고 브랜치 생성/PR/정리는 수동 |
-| **온보딩 문서** | 역할별(관리자/팀원) 한국어 가이드 5종 내장 | 영어 README 수준, 역할별 분리 없음 |
+| **워크플로우 자동화** | `git nb`/`git fb`/`git cleanup`/`git sync-main`으로 전체 사이클 커버 | 대부분 검증만 제공하고 브랜치 생성/PR/정리는 수동 |
+| **브랜치 전략 유연성** | Single-trunk(main) + Two-branch(develop/main) 모드 전환 지원 | 대부분 단일 전략만 지원하거나 전략 자체를 다루지 않음 |
+| **온보딩 문서** | 역할별(관리자/팀원) × 모드별(Single/Two) 한국어 가이드 6종 내장 | 영어 README 수준, 역할별 분리 없음 |
 
 > **요약**: 기존 도구들이 "커밋 메시지 린터", "훅 매니저", "PR 제목 체커"처럼 한 가지 역할에 특화되어 있다면, branch-strategy-kit은 이 모든 것을 **하나의 일관된 전략 아래 통합**하여 파일 복사만으로 즉시 적용할 수 있는 올인원 킷이다.
 
@@ -70,8 +73,8 @@
 
 | 역할 | 설명 | 주요 작업 | 관련 문서 |
 |------|------|-----------|-----------|
-| **관리자** (repo admin) | 킷을 팀 레포에 처음 도입하는 사람. GitHub repo admin 권한 보유 | branch protection 설정, CI/스크립트 파일 복사, 팀에 공유 | `1-ADMIN_SETUP.md` |
-| **팀원** (contributor) | 킷이 적용된 프로젝트에서 매일 작업하는 개발자. Git/GitHub 숙련도 편차 있음 | bootstrap 실행, 일상 워크플로우(브랜치 생성→커밋→PR→정리) | `2-MEMBER_SETUP.md`, `3-DAILY_WORKFLOW.md` |
+| **관리자** (repo admin) | 킷을 팀 레포에 처음 도입하는 사람. GitHub repo admin 권한 보유 | branch protection 설정, `install.sh`로 킷 파일 복사, 모드 선택(Single/Two), 팀에 공유 | `1-ADMIN_SETUP.md` |
+| **팀원** (contributor) | 킷이 적용된 프로젝트에서 매일 작업하는 개발자. Git/GitHub 숙련도 편차 있음 | bootstrap 실행, 일상 워크플로우(브랜치 생성→커밋→PR→정리) | `2a-MEMBER_SETUP_SINGLE.md` / `2b-MEMBER_SETUP_TWO.md`, `3a-DAILY_WORKFLOW_SINGLE.md` / `3b-DAILY_WORKFLOW_TWO.md` |
 
 ---
 
@@ -84,13 +87,15 @@
 3. **Squash Merge 전일화**: merge commit, rebase merge를 금지하고 squash merge만 허용하여 linear history 유지
 4. **규칙의 코드화**: 규칙을 문서가 아닌 자동화(훅, CI, protection rule)로 강제. "규칙을 모르면 자동으로 거부됨"
 5. **3계층 방어**: 서버 → CI → 클라이언트 순서로 규칙을 검증하여, 어느 한 계층이 우회되어도 다른 계층에서 차단
-6. **복사 기반 이식**: npm/pip 등 패키지 매니저 없이, 파일 복사만으로 어떤 프로젝트든 적용 가능
-7. **개발자 경험 우선**: 최소 타이핑(`git nb`, `git fb`, `git cleanup`)으로 전체 워크플로우를 커버
+6. **복사 기반 이식**: npm/pip 등 패키지 매니저 없이, `install.sh` 또는 수동 파일 복사만으로 어떤 프로젝트든 적용 가능
+7. **개발자 경험 우선**: 최소 타이핑(`git nb`, `git fb`, `git cleanup`, `git sync-main`)으로 전체 워크플로우를 커버
+8. **전략 유연성**: Single-trunk(main 단독)과 Two-branch(develop + main) 모드를 `.kit-config` 하나로 전환. 전략 변경이 모든 스크립트·CI에 자동 반영
 
 <details>
 <summary>설계 결정의 근거</summary>
 
 - **왜 GitHub Flow인가**: Git Flow의 develop/release/hotfix 브랜치는 소규모~중규모 팀에게 과도한 관리 부담. main 하나로 충분한 프로젝트가 대부분
+- **왜 Two-branch 옵션인가**: 일부 팀은 main을 릴리스 전용으로 유지하고 develop에서 통합하는 구조를 원한다. Git Flow의 복잡성 없이 develop/main 2-branch만으로 이 니즈를 충족
 - **왜 Squash Merge 전일화인가**: merge commit은 히스토리를 오염시키고, rebase merge는 중급 이상 Git 지식이 필요. Squash merge는 "PR 1개 = 커밋 1개"로 가장 단순
 - **왜 3계층인가**: branch protection만으로는 브랜치명/커밋 메시지 규칙 불가. CI만으로는 push 후 피드백이 늦음. 클라이언트 훅만으로는 `--no-verify` 우회 가능. 세 계층이 상호 보완
 - **왜 bash인가**: 모든 OS(macOS/Linux/Windows Git Bash)에서 추가 런타임 없이 실행 가능. Node.js/Python 의존성 없이 킷의 진입 장벽을 최소화
@@ -110,19 +115,23 @@
 | FR-005 | `scripts/check-branch.sh` | pre-push 브랜치명 검증 | `bash scripts/check-branch.sh <mode>` | ✅ 구현됨 |
 | FR-006 | `scripts/check-commit-msg.sh` | commit-msg Conventional Commits 검증 | `bash scripts/check-commit-msg.sh <file>` | ✅ 구현됨 |
 | FR-007 | `scripts/branch-move.sh` | 인터랙티브 브랜치 전환 | `./scripts/branch-move.sh` / `git branch-move` | ✅ 구현됨 |
+| FR-008 | `scripts/sync-main.sh` | develop→main PR 생성 (Two-branch 전용) | `./scripts/sync-main.sh [--tag vX.Y.Z]` / `git sync-main` | ✅ 구현됨 (v1.1.0) |
+| FR-009 | `install.sh` | 킷 파일 일괄 복사 | `~/branch-strategy-kit/install.sh [--dry-run]` | ✅ 구현됨 (v1.1.0) |
+| FR-010 | `scripts/_config.sh` | 킷 설정 로더 (내부 헬퍼) | `source scripts/_config.sh` (스크립트 내부 호출) | ✅ 구현됨 (v1.1.0) |
+| FR-011 | `scripts/verify-invariant.sh` | 12곳 type 목록 일관성 검증 | `bash scripts/verify-invariant.sh` (CI 호출) | ✅ 구현됨 (v1.1.0) |
 
 ---
 
 ### FR-001: 초기 환경 설정 (bootstrap)
 
-- **스크립트**: `scripts/bootstrap.sh` (477줄)
+- **스크립트**: `scripts/bootstrap.sh`
 - **용도**: 킷의 필수 의존성 설치 및 로컬 환경 일괄 구성. 팀원 온보딩의 단일 진입점
 - **사용법**: `./scripts/bootstrap.sh` (대화형) 또는 `./scripts/bootstrap.sh --yes` (CI/자동화)
 - **입력**: `--yes` 플래그 (선택, 모든 확인 프롬프트 자동 승인)
 - **출력/부수 효과**:
   - `gh` (GitHub CLI) 설치 (미설치 시)
   - `lefthook` 설치 및 `.git/hooks/*` 등록
-  - Git alias 5개 등록: `nb`, `fb`, `cleanup`, `branch-move`, `bootstrap`
+  - Git alias 6개 등록: `nb`, `fb`, `cleanup`, `branch-move`, `sync-main`, `bootstrap`
   - `.gitattributes` 규칙 검증 (Windows CRLF 방지)
   - 최종 요약 리포트 출력 (상태별: already/installed/failed 등)
 - **의존성**: OS별 패키지 매니저 (`brew`, `apt`, `dnf`, `pacman`, `winget`, `scoop`)
@@ -131,60 +140,60 @@
 
 ### FR-002: 인터랙티브 브랜치 생성
 
-- **스크립트**: `scripts/new-branch.sh` (166줄)
-- **용도**: main 최신화 후 `type/name` 형식의 새 작업 브랜치 생성
+- **스크립트**: `scripts/new-branch.sh`
+- **용도**: `DEFAULT_BRANCH` 최신화 후 `type/name` 형식의 새 작업 브랜치 생성
 - **사용법**:
   - `git nb` — 완전 인터랙티브 (화살표 키로 type 선택 + name 입력)
   - `git nb feat` — type 지정, name만 프롬프트
   - `git nb feat my-feature` — 완전 자동 (CI 호환)
 - **입력**: type (8종 중 택 1), name (소문자/숫자/하이픈)
 - **출력/부수 효과**:
-  - `git checkout main && git pull --ff-only`
+  - `git checkout $DEFAULT_BRANCH && git pull --ff-only`
   - `git checkout -b type/name`
-- **의존성**: `git`
+- **의존성**: `git`, `_config.sh`
 - **에러 처리**: `set -euo pipefail`, 대소문자/공백/언더스코어 자동 정규화, 브랜치 중복 검사, TTY 감지
-- **특이사항**: ANSI 커서 제어로 터미널 UI 직접 구현 (fzf 미의존)
+- **특이사항**: ANSI 커서 제어로 터미널 UI 직접 구현 (fzf 미의존). `_config.sh`에서 `DEFAULT_BRANCH`를 로드하여 Single/Two-branch 모드 자동 대응
 
 ### FR-003: PR 자동 생성
 
-- **스크립트**: `scripts/finish-branch.sh` (109줄)
+- **스크립트**: `scripts/finish-branch.sh`
 - **용도**: 현재 브랜치를 원격에 push하고 GitHub PR 자동 생성
 - **사용법**: `git fb` 또는 `git fb --no-pr` (push만 수행)
 - **입력**: `--no-pr` 플래그 (선택)
 - **출력/부수 효과**:
   - `git push -u origin <branch>`
-  - `gh pr create --fill-first` (첫 커밋 메시지를 PR 제목/본문으로 사용)
-- **의존성**: `git`, `gh`
-- **에러 처리**: main 브랜치 차단, 미커밋 변경 차단, 기존 PR 중복 감지, 브랜치명 재검증
-- **특이사항**: `gh` 미설치 시 push만 수행하고 수동 PR 생성 안내
+  - `gh pr create --base $DEFAULT_BRANCH --fill-first` (첫 커밋 메시지를 PR 제목/본문으로 사용)
+- **의존성**: `git`, `gh`, `_config.sh`
+- **에러 처리**: main/develop 브랜치 차단, 미커밋 변경 차단, 기존 PR 중복 감지, 브랜치명 재검증
+- **특이사항**: `gh` 미설치 시 push만 수행하고 수동 PR 생성 안내. PR base를 `$DEFAULT_BRANCH`로 지정하여 Two-branch 모드 자동 대응
 
 ### FR-004: 머지된 브랜치 정리
 
-- **스크립트**: `scripts/cleanup-merged.sh` (225줄)
+- **스크립트**: `scripts/cleanup-merged.sh`
 - **용도**: 머지 완료된 로컬 브랜치 및 원격에서 삭제된 브랜치 일괄 정리
 - **사용법**: `git cleanup` 또는 `git cleanup --exclude 'feat/*'`
 - **입력**: `--exclude <pattern>` (선택, 복수 가능, bash glob 문법)
 - **출력/부수 효과**:
   - 로컬 브랜치 삭제 (`git branch -d` 또는 `-D`)
   - PR 머지 브랜치는 원격도 삭제 (`git push origin --delete`)
-- **의존성**: `git`, `gh` (선택적 — 없으면 3번째 신호 생략)
-- **에러 처리**: 보호 브랜치(main/master/develop) 항상 제외, 삭제 전 사용자 확인, 검출 사유 표시
-- **특이사항**: **3-signal 검출** — ① `git branch --merged` ② `git branch -vv`의 `gone` ③ `gh pr list --state merged`. Squash merge로 인해 ①만으로는 감지 불가한 브랜치를 ②③으로 보완
+- **의존성**: `git`, `gh` (선택적 — 없으면 3번째 신호 생략), `_config.sh`
+- **에러 처리**: 보호 브랜치(main/master/develop/`DEFAULT_BRANCH`) 항상 제외, 삭제 전 사용자 확인, 검출 사유 표시
+- **특이사항**: **3-signal 검출** — ① `git branch --merged` ② `git branch -vv`의 `gone` ③ `gh pr list --head <branch> --state merged --json headRefOid` per-branch 역방향 조회 + 로컬 `git rev-parse` 결과와 **SHA 정확 일치**로만 머지 판정. Squash merge로 ①만으로 감지 불가한 브랜치를 ②③으로 보완. ③의 SHA 검증은 "1차 머지 후 같은 이름으로 새 작업 중인 브랜치"(브랜치명 재사용) 오탐을 차단. `PR_MERGED_CACHE` associative array로 signal 3 루프와 `detect_reason()` 분기 간 결과 공유. 상세 설계·14개 시나리오 트레이싱: `docs/design/signal3-design-v3-trace.md`(로컬). ADR-010 참조.
 
 ### FR-005: 브랜치명 검증 (pre-push 훅)
 
-- **스크립트**: `scripts/check-branch.sh` (45줄)
+- **스크립트**: `scripts/check-branch.sh`
 - **용도**: pre-push 훅에서 브랜치명 규칙 검증
 - **사용법**: `bash scripts/check-branch.sh no-main-push` 또는 `bash scripts/check-branch.sh name`
 - **입력**: mode (`no-main-push` | `name`)
 - **출력**: 규칙 위반 시 exit 1로 push 차단 + 에러 메시지
-- **의존성**: `git`
+- **의존성**: `git`, `_config.sh`
 - **검증 규칙**: `^(feat|fix|refactor|docs|research|data|chore|remove)/[a-z0-9][a-z0-9-]*$`
-- **특이사항**: Git Bash on Windows에서 lefthook 인라인 스크립트의 문자열 mangle 버그를 우회하기 위해 별도 파일로 추출
+- **특이사항**: Git Bash on Windows에서 lefthook 인라인 스크립트의 문자열 mangle 버그를 우회하기 위해 별도 파일로 추출. `no-main-push` 모드에서 `$DEFAULT_BRANCH` 보호
 
 ### FR-006: 커밋 메시지 검증 (commit-msg 훅)
 
-- **스크립트**: `scripts/check-commit-msg.sh` (45줄)
+- **스크립트**: `scripts/check-commit-msg.sh`
 - **용도**: commit-msg 훅에서 Conventional Commits 형식 검증
 - **사용법**: `bash scripts/check-commit-msg.sh <MSG_FILE>`
 - **입력**: 커밋 메시지 파일 경로 (Git이 자동 전달)
@@ -195,7 +204,7 @@
 
 ### FR-007: 인터랙티브 브랜치 전환
 
-- **스크립트**: `scripts/branch-move.sh` (141줄)
+- **스크립트**: `scripts/branch-move.sh`
 - **용도**: 로컬 브랜치를 인터랙티브로 선택해 빠르게 checkout
 - **사용법**: `git branch-move`
 - **입력**: 없음 (인터랙티브)
@@ -203,6 +212,62 @@
 - **의존성**: `git`, `fzf` (선택적 — 없으면 번호 입력 fallback)
 - **에러 처리**: 미커밋 변경 차단, 브랜치 1개 이하 시 안내, 이미 현재 브랜치 선택 시 정보 메시지
 - **특이사항**: fzf 있으면 fuzzy 검색 UI, 없으면 번호 입력 TUI. 최근 커밋 순서로 정렬, 현재 브랜치 상단 고정
+
+### FR-008: develop→main 동기화 (Two-branch 전용)
+
+- **스크립트**: `scripts/sync-main.sh`
+- **용도**: Two-branch 모드에서 develop→main PR을 생성하여 릴리스 동기화
+- **사용법**:
+  - `git sync-main` — develop→main 동기화 PR 생성
+  - `git sync-main --tag v1.2.0` — 릴리스 태그 PR 생성 (본문에 커밋 로그 포함)
+- **입력**: `--tag vX.Y.Z` (선택, semver 형식)
+- **출력/부수 효과**:
+  - develop 최신화 (`git checkout develop && git pull --ff-only`)
+  - `gh pr create --base main --head develop`
+  - `--tag` 사용 시 PR 본문에 develop→main 커밋 로그 첨부
+- **의존성**: `git`, `gh`, `_config.sh`
+- **에러 처리**: `DEFAULT_BRANCH != develop` 시 모드 가드 거부, 태그 형식 검증 (`^v[0-9]+\.[0-9]+\.[0-9]+$`), develop 미체크아웃 경고, main 대비 커밋 0건 시 거부, 기존 PR 중복 감지
+- **특이사항**: Single-trunk 모드에서는 실행 불가 (모드 가드). Two-branch 전략의 핵심 릴리스 워크플로우
+
+### FR-009: 킷 파일 일괄 복사 (install)
+
+- **스크립트**: `install.sh` (프로젝트 루트)
+- **용도**: 킷 파일을 대상 레포에 일괄 복사하여 도입 시간 단축
+- **사용법**: `~/branch-strategy-kit/install.sh [--dry-run]`
+- **실행 위치**: 대상 레포 루트에서 실행
+- **입력**: `--dry-run` (선택, 실제 복사 없이 미리보기)
+- **출력/부수 효과**:
+  - `COPY_FILES` 배열에 정의된 파일을 킷에서 대상 레포로 복사
+  - 대상: `.github/workflows/*` (user-facing 3개), `.github/pull_request_template.md`, `.kit-config`, `.gitattributes`, `lefthook.yml`, `scripts/*.sh`
+  - 기존 파일 존재 시 diff 표시 + 덮어쓰기 확인
+  - 복사 후 `scripts/*.sh`에 실행 권한 설정
+- **의존성**: `git`, `diff`, `cp`, `find`
+- **에러 처리**: 대상 디렉토리 git 레포 검증, `--dry-run` 모드에서 안전한 미리보기
+- **특이사항**: 관리자가 킷을 처음 도입할 때 `1-ADMIN_SETUP.md` Step 2를 대체. kit-self CI 워크플로우(6개)는 복사 대상에서 제외
+
+### FR-010: 킷 설정 로더 (_config.sh)
+
+- **스크립트**: `scripts/_config.sh`
+- **용도**: `.kit-config` 파일에서 `DEFAULT_BRANCH` 등 킷 설정을 로드하는 내부 헬퍼
+- **사용법**: `source "$(dirname "${BASH_SOURCE[0]}")/_config.sh"` (다른 스크립트에서 호출)
+- **입력**: 없음 (`.kit-config` 파일을 자동 탐색)
+- **출력**: `DEFAULT_BRANCH` 환경변수 설정 (기본값: `main`)
+- **사용처**: `new-branch.sh`, `finish-branch.sh`, `cleanup-merged.sh`, `check-branch.sh`, `sync-main.sh`
+- **특이사항**: `.kit-config` 파일 부재 시 기본값 `main`으로 fallback. Two-branch 모드 전환의 단일 진입점
+
+### FR-011: 불변식 동기화 검증 (verify-invariant)
+
+- **스크립트**: `scripts/verify-invariant.sh`
+- **용도**: 12곳에 중복 정의된 type 목록의 일관성을 자동 검증
+- **사용법**: `bash scripts/verify-invariant.sh` (CI 워크플로우 `kit-ci-invariant.yml`에서 호출)
+- **입력**: 없음
+- **출력**: 각 파일의 type 추출 결과 + 불일치 시 상세 diff
+- **검증 구조**:
+  - **Tier A (필수, 7곳)**: `check-branch.sh`, `check-commit-msg.sh`, `new-branch.sh`, `branch-name-check.yml`, `pr-title-check.yml`, `finish-branch.sh`, `README.md`
+  - **Tier B (권고, 5곳)**: `3a-DAILY_WORKFLOW_SINGLE.md`, `3b-DAILY_WORKFLOW_TWO.md`, `2a-MEMBER_SETUP_SINGLE.md`, `2b-MEMBER_SETUP_TWO.md`, `.github/pull_request_template.md`
+- **종료 코드**: Tier A 불일치 시 exit 1 (CI 실패), Tier B 불일치는 경고만
+- **정규 소스**: `scripts/check-branch.sh`의 `PATTERN` 변수
+- **특이사항**: 파일별 추출 방식이 다름 (정규식, 배열, YAML 리스트, 마크다운 표). `kit-ci-invariant.yml`에서 매 push 시 자동 실행
 
 ---
 
@@ -218,19 +283,30 @@
 
 > **설계 원칙**: Tier 3(클라이언트)는 빠른 피드백을 위한 편의 기능이고, 실질적 강제력은 Tier 1+2에서 담보한다. 새 검증 규칙 추가 시 반드시 Tier 2(CI)에도 구현해야 실효성이 보장된다.
 
-### 6.2 CI 워크플로우
+### 6.2 User-facing CI 워크플로우
 
 | AR-ID | 워크플로우 | 트리거 | 검증 내용 |
 |-------|------------|--------|-----------|
-| AR-001 | `branch-name-check.yml` | PR opened/edited/synchronize/reopened | 소스 브랜치명이 `^(feat\|fix\|refactor\|docs\|research\|data\|chore\|remove)/[a-z0-9][a-z0-9-]*$` 패턴 일치 여부 |
+| AR-001 | `branch-name-check.yml` | PR opened/edited/synchronize/reopened | 소스 브랜치명이 정규식 패턴 일치 여부. develop→main PR은 예외 처리 |
 | AR-002 | `pr-title-check.yml` | PR opened/edited/synchronize/reopened | PR 제목이 Conventional Commits 형식 준수 여부 (외부 액션 `amannn/action-semantic-pull-request@v5` 사용) |
 | AR-003 | `stale-branches.yml` | cron 매주 월요일 00:00 UTC + 수동 dispatch | 30일 이상 비활성 브랜치 감지 및 정리 (기본 dry-run, 수동으로 실제 삭제 전환 가능) |
 
-### 6.3 Git Hooks (lefthook)
+### 6.3 Kit-self CI 워크플로우
+
+| AR-ID | 워크플로우 | 트리거 | 검증 내용 |
+|-------|------------|--------|-----------|
+| AR-004 | `kit-ci-shellcheck.yml` | push to any branch | `scripts/*.sh` shellcheck 정적 분석 |
+| AR-005 | `kit-ci-bash-syntax.yml` | push to any branch | `bash -n` 문법 검사 |
+| AR-006 | `kit-ci-yaml-lint.yml` | push to any branch | `lefthook.yml`, `.github/workflows/*.yml` yamllint 검증 |
+| AR-007 | `kit-ci-invariant.yml` | push to any branch | `verify-invariant.sh` 12곳 동기화 검증 (Tier A 필수 + Tier B 권고) |
+| AR-008 | `kit-ci-markdown-lint.yml` | push to any branch | `*.md` markdownlint-cli2 검증 |
+| AR-009 | `kit-ci-link-check.yml` | push to any branch | 마크다운 문서 내 링크 유효성 검증 |
+
+### 6.4 Git Hooks (lefthook)
 
 | 훅 이벤트 | 실행 스크립트 | 검증 내용 |
 |-----------|-------------|-----------|
-| pre-push (parallel) | `scripts/check-branch.sh no-main-push` | main/master 직접 push 차단 |
+| pre-push (parallel) | `scripts/check-branch.sh no-main-push` | main/master/`DEFAULT_BRANCH` 직접 push 차단 |
 | pre-push (parallel) | `scripts/check-branch.sh name` | 브랜치명 정규식 패턴 검증 |
 | commit-msg | `scripts/check-commit-msg.sh {1}` | Conventional Commits 형식 검증 |
 
@@ -243,11 +319,11 @@
 | 단계 | 역할 | 소요 시간 | 작업 내용 | 관련 문서 |
 |------|------|-----------|-----------|-----------|
 | 1 | 관리자 | ~5분 | GitHub branch protection 설정 (main 보호, squash only, linear history) | `1-ADMIN_SETUP.md` Step 1 |
-| 2 | 관리자 | ~10분 | CI 워크플로우·`.gitattributes`·PR 템플릿 파일 복사 및 PR 제출 | `1-ADMIN_SETUP.md` Step 2 |
-| 3 | 관리자 | ~5분 | lefthook 설정 + 스크립트 복사 (선택) | `1-ADMIN_SETUP.md` Step 3 |
-| 4 | 팀원 | ~5분 | `./scripts/bootstrap.sh` 실행 (gh, lefthook, alias, hooks 일괄 설정) | `2-MEMBER_SETUP.md` |
+| 2 | 관리자 | ~10분 | `install.sh`로 킷 파일 일괄 복사 → 커밋 + PR + squash merge → status check 등록 | `1-ADMIN_SETUP.md` Step 2 |
+| 3 | 관리자 | ~5분 | `bootstrap.sh` 실행 (로컬 환경 세팅) + Two-branch 모드 설정 (선택) | `1-ADMIN_SETUP.md` Step 3 |
+| 4 | 팀원 | ~5분 | `./scripts/bootstrap.sh` 실행 (gh, lefthook, alias, hooks 일괄 설정) | `2a-MEMBER_SETUP_SINGLE.md` / `2b-MEMBER_SETUP_TWO.md` |
 
-### 7.2 일상 사용 (Daily Workflow)
+### 7.2 일상 사용 — Single-trunk 모드 (Daily Workflow)
 
 ```
 git nb feat login-form       # 1. 새 브랜치 생성 (main 최신화 + checkout)
@@ -257,8 +333,22 @@ git fb                       # 3. push + PR 생성
 git cleanup                  # 5. 머지된 로컬 브랜치 정리
 ```
 
-보조 명령어:
+### 7.3 일상 사용 — Two-branch 모드 (Daily Workflow)
+
+```
+git nb feat login-form       # 1. 새 브랜치 생성 (develop 최신화 + checkout)
+# ... 작업 + 커밋 ...        # 2. 커밋 (자동 메시지 검증)
+git fb                       # 3. push + PR 생성 (→ develop)
+# ... 리뷰어가 Squash Merge ... # 4. 리뷰 및 develop 머지
+git cleanup                  # 5. 머지된 로컬 브랜치 정리
+git sync-main                # 6. develop→main PR 생성 (릴리스 시)
+```
+
+### 7.4 보조 명령어
+
 - `git branch-move` — 로컬 브랜치 간 빠른 전환
+- `git sync-main` — develop→main 동기화 PR 생성 (Two-branch 전용)
+- `git sync-main --tag v1.2.0` — 릴리스 태그 PR 생성
 - `git bootstrap` — 환경 재설정 (idempotent)
 
 ---
@@ -269,7 +359,7 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 | 항목 | 요구사항 | 근거 |
 |------|----------|------|
-| OS | macOS, Linux (Ubuntu/Fedora/Arch), Windows (Git Bash 또는 WSL만) | `bootstrap.sh`의 OS/PM 감지 로직, `2-MEMBER_SETUP.md`에 명시 |
+| OS | macOS, Linux (Ubuntu/Fedora/Arch), Windows (Git Bash 또는 WSL만) | `bootstrap.sh`의 OS/PM 감지 로직, `2a/2b-MEMBER_SETUP.md`에 명시 |
 | 셸 | bash 4+ 필수. POSIX sh/zsh/dash 미지원 | `CLAUDE.md`에 명시, 스크립트 shebang `#!/usr/bin/env bash` |
 | Git 버전 | 2.30+ | `README.md`에 명시 |
 | 줄바꿈 | LF 강제 (`.gitattributes`로 `*.sh`, `*.yml` 등에 `eol=lf` 적용) | CRLF 혼입 시 CI 깨짐 |
@@ -287,10 +377,12 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 이 킷을 다른 프로젝트에 적용하려면:
 
-1. **파일 복사**: `scripts/`, `.github/workflows/`, `lefthook.yml`, `.gitattributes`, `.github/pull_request_template.md`를 대상 레포에 복사
-2. **실행 권한**: `git add --chmod=+x scripts/*.sh`로 인덱스에 실행 권한(100755) 기록 (Windows에서 필수)
-3. **서버 설정**: GitHub branch protection rule 수동 구성 (`1-ADMIN_SETUP.md` Step 1)
-4. **팀원 온보딩**: 각 팀원이 `./scripts/bootstrap.sh` 실행
+1. **자동 복사**: `~/branch-strategy-kit/install.sh` 실행 (권장)
+2. **또는 수동 복사**: `scripts/`, `.github/workflows/`, `lefthook.yml`, `.gitattributes`, `.kit-config`, `.github/pull_request_template.md`를 대상 레포에 복사
+3. **모드 선택**: `.kit-config`에서 `DEFAULT_BRANCH=main` (Single-trunk) 또는 `DEFAULT_BRANCH=develop` (Two-branch) 설정
+4. **실행 권한**: `git add --chmod=+x scripts/*.sh`로 인덱스에 실행 권한(100755) 기록 (Windows에서 필수)
+5. **서버 설정**: GitHub branch protection rule 수동 구성 (`1-ADMIN_SETUP.md` Step 1)
+6. **팀원 온보딩**: 각 팀원이 `./scripts/bootstrap.sh` 실행
 
 패키지 매니저, 빌드 도구, 런타임에 의존하지 않으므로 언어/프레임워크에 무관하게 적용 가능하다.
 
@@ -298,22 +390,32 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 ## 9. 일관성 불변식 (Consistency Invariant)
 
-브랜치 타입 목록(`feat|fix|refactor|docs|research|data|chore|remove`)과 네이밍 정규식이 **10곳에 중복 정의**되어 있다. 타입 추가/제거/변경 시 반드시 **모두** 동기화해야 한다:
+브랜치 타입 목록(`feat|fix|refactor|docs|research|data|chore|remove`)과 네이밍 정규식이 **12곳에 중복 정의**되어 있다. 타입 추가/제거/변경 시 반드시 **모두** 동기화해야 한다:
 
 | # | 파일 | 동기화 대상 |
 |---|------|-------------|
-| 1 | `scripts/check-branch.sh` | `PATTERN` 정규식 |
+| 1 | `scripts/check-branch.sh` | `PATTERN` 정규식 (정규 소스) |
 | 2 | `scripts/check-commit-msg.sh` | `PATTERN` 정규식 |
 | 3 | `.github/workflows/branch-name-check.yml` | `PATTERN` 정규식 |
 | 4 | `.github/workflows/pr-title-check.yml` | `types:` 목록 |
 | 5 | `scripts/new-branch.sh` | `ALLOWED_TYPES` 배열 + 안내 문구 |
 | 6 | `scripts/finish-branch.sh` | `PATTERN` 정규식 |
-| 7 | `3-DAILY_WORKFLOW.md` | 네이밍 표 + Quick Reference 표 + 예시 |
-| 8 | `.github/pull_request_template.md` | 변경 유형 체크리스트 |
-| 9 | `README.md` | "허용되는 브랜치 type" 문장 (line 72) |
-| 10 | `2-MEMBER_SETUP.md` | 커밋 메시지 형식 안내 (line 101) |
+| 7 | `3a-DAILY_WORKFLOW_SINGLE.md` | 네이밍 표 + Quick Reference 표 + `git nb` 예시 |
+| 8 | `3b-DAILY_WORKFLOW_TWO.md` | 네이밍 표 + Quick Reference 표 + `git nb` 예시 |
+| 9 | `.github/pull_request_template.md` | 변경 유형 체크리스트 |
+| 10 | `README.md` | "허용되는 브랜치 type" 문장 |
+| 11 | `2a-MEMBER_SETUP_SINGLE.md` | 커밋 메시지 형식 안내 |
+| 12 | `2b-MEMBER_SETUP_TWO.md` | 커밋 메시지 형식 안내 |
 
-> 이 불변식 위반은 "특정 타입이 로컬에서는 통과하지만 CI에서 실패" 같은 혼란을 유발하므로 최우선 주의 사항이다.
+> 이 불변식 위반은 "특정 타입이 로컬에서는 통과하지만 CI에서 실패" 같은 혼란을 유발하므로 최우선 주의 사항이다. `verify-invariant.sh`와 `kit-ci-invariant.yml`이 매 push 시 자동 검증한다.
+
+### 추가 동기화 규칙
+
+- 새 workflow → `1-ADMIN_SETUP.md` 파일 복사 목록 + `install.sh`의 `COPY_FILES` 배열 (kit-self CI 제외)
+- 새 스크립트 → `3a/3b-DAILY_WORKFLOW.md` alias 대응표 + `1-ADMIN_SETUP.md` 복사 목록 + `install.sh`의 `COPY_FILES` 배열 + `chmod +x`
+- 검증 메시지 변경 → `1-ADMIN_SETUP.md` 출력 예시 + `TROUBLESHOOTING.md`
+- alias 변경 → `bootstrap.sh`의 `GIT_ALIASES` + `3a/3b` Quick Reference
+- `DEFAULT_BRANCH` 참조: `.kit-config`(정의) → `_config.sh`(로드) → `new-branch.sh`, `finish-branch.sh`, `cleanup-merged.sh`, `check-branch.sh`(사용) → `sync-main.sh`(모드 검증) → `branch-name-check.yml`(develop→main 예외)
 
 ---
 
@@ -321,12 +423,13 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 | 지표 | 목표 | 측정 방법 |
 |------|------|-----------|
-| SACHO 프로젝트 팀원 만족도 | 팀원들이 워크플로우에 만족 | 팀원 피드백 [정성적] |
+| SACHO 프로젝트 팀원 만족도 | 팀원들이 워크플로우에 만족 | 팀원 피드백 |
 | main 직접 push 차단율 | 100% | branch protection 로그 |
 | 브랜치명 규칙 위반율 | 0% (CI 통과 기준) | `branch-name-check.yml` 실패 로그 |
 | PR 제목 규칙 위반율 | 0% (CI 통과 기준) | `pr-title-check.yml` 실패 로그 |
 | 30일 이상 비활성 브랜치 수 | 0개 | `stale-branches.yml` 리포트 |
 | 팀원 온보딩 소요 시간 | 5분 이내 | `bootstrap.sh` 실행 완료 시간 |
+| 12곳 불변식 동기화율 | 100% (CI 통과 기준) | `kit-ci-invariant.yml` Tier A 결과 |
 
 ---
 
@@ -356,11 +459,16 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 ## 12. 향후 계획 (Roadmap)
 
-| 우선순위 | 계획 | 상세 |
-|---------|------|------|
-| 높음 | **Two-branch 운영 모드 지원** | 현재 main 단독 운영 외에, main + develop 이중 브랜치 운영을 선택 가능하도록 확장 |
-| 중간 | **`git branch-move` 개선** | 기능 및 인터페이스 개선 (UX 향상) |
-| 중간 | **관리자 세팅 간소화** | 도입 시간 단축, 설정 단계 자동화 확대 |
+| 우선순위 | 계획 | 상세 | 상태 |
+|---------|------|------|------|
+| ~~높음~~ | ~~Two-branch 운영 모드 지원~~ | `.kit-config` + `_config.sh` + `sync-main.sh` + 문서 분리 | ✅ v1.1.0 완료 |
+| ~~높음~~ | ~~Kit-self CI~~ | shellcheck, bash syntax, yamllint, markdown lint, link check, invariant sync | ✅ v1.1.0 완료 |
+| ~~높음~~ | ~~install.sh~~ | 킷 파일 일괄 복사 스크립트 | ✅ v1.1.0 완료 |
+| 중간 | **`git branch-move` 개선** | 기능 및 인터페이스 개선 (UX 향상) | 미착수 |
+| ~~중간~~ | ~~관리자 세팅 간소화~~ | `install.sh`로 파일 복사 자동화, 도입 시간 단축 | ✅ v1.1.0 1차 완료 (`install.sh`) |
+| 낮음 | **영어 문서** | README_en.md 등 OSS 발견성 향상 | 미착수 |
+| 낮음 | **비-TTY ASCII fallback** | CI/Docker 환경에서 이모지 대신 `[ERROR]`/`[OK]` 출력 | 미착수 |
+| 낮음 | **`DEBUG=1` 환경변수** | 모든 스크립트에서 `set -x` 활성화 | 미착수 |
 
 ---
 
@@ -376,13 +484,11 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 | `[미확인]` | 검증되지 않음, 추가 조사 필요 |
 | `[사후 기록]` | 결정 시점이 아닌 PRD 작성 시점에 정리 |
 
-**원번호 ↔ 배치 §번호 매핑**: 사용자가 원래 지정한 번호와 본 PRD의 배치 §번호는 논리 흐름상 다르다. (1→§20, 3→§21, 4→§13, 6→§23, 8→§18, 9→§16, 11→§15, 12→§14, 15→§17, 16→§19, 21→부록 D, 22→§22, 24→§24)
-
 ---
 
 ## 13. 핵심 사용 사례 (Key Use Cases)
 
-> **가정 시나리오 안내**: 본 섹션의 페르소나는 모두 가상이다. SACHO 프로젝트는 킷 도입은 완료했으나 본격 작업이 **2026-05** 시작 예정이라 외부 사용자 데이터가 아직 없다. 5개 UC는 다양한 사용자가 킷을 도입했을 때 얻는 이점을 보이는 가상 시나리오다. 모두 `[가정]` 태그.
+> **가정 시나리오 안내**: 본 섹션의 페르소나는 모두 가상이다. SACHO 프로젝트는 킷 도입은 완료했으나 본격 작업이 **2026-05** 시작 예정이라 외부 사용자 데이터가 아직 없다. UC는 다양한 사용자가 킷을 도입했을 때 얻는 이점을 보이는 가상 시나리오다. 모두 `[가정]` 태그.
 
 ### 13.1 UC-1: 신입 팀원의 첫 PR `[가정]`
 
@@ -426,9 +532,9 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 - **Trigger**: 본인 PR이 squash merge된 직후, 다음 작업 시작 직전
 - **관련 FR**: FR-002, FR-004
 
-**Flow**: ① GitHub UI에서 PR squash merge 확인 ② `git nb feat next-feature` → 자동으로 main 최신화 + 새 브랜치 생성 ③ 필요 시 `git cleanup`으로 직전 머지 브랜치 정리 ④ 새 브랜치에서 작업 재개
+**Flow**: ① GitHub UI에서 PR squash merge 확인 ② `git nb feat next-feature` → 자동으로 `DEFAULT_BRANCH` 최신화 + 새 브랜치 생성 ③ 필요 시 `git cleanup`으로 직전 머지 브랜치 정리 ④ 새 브랜치에서 작업 재개
 
-**이점**: "PR 1개 = 커밋 1개"의 멘탈 모델로 자연스럽게 전환. main 최신화를 별도 명령으로 기억할 필요 없음. Git Flow의 release/develop 마찰이 사라짐.
+**이점**: "PR 1개 = 커밋 1개"의 멘탈 모델로 자연스럽게 전환. `DEFAULT_BRANCH` 최신화를 별도 명령으로 기억할 필요 없음.
 
 ---
 
@@ -436,11 +542,23 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 - **Actor**: Tech Lead "주현" — 기존 GitHub 레포의 admin
 - **Trigger**: 팀 합류로 워크플로우 표준화 필요
-- **관련 FR**: FR-001 / AR-001~003
+- **관련 FR**: FR-001, FR-009 / AR-001~003
 
-**Flow**: ① `1-ADMIN_SETUP.md` Step 1: branch protection 수동 설정 (~5분) ② Step 2: `.github/workflows/`·`.gitattributes`·PR 템플릿을 PR로 도입 (~10분) ③ Step 3: `lefthook.yml` + `scripts/` 추가 (~5분) ④ 팀원에게 `2-MEMBER_SETUP.md` 공유 → 각자 `bootstrap.sh` 실행
+**Flow**: ① `1-ADMIN_SETUP.md` Step 1: branch protection 수동 설정 (~5분) ② Step 2: `install.sh`로 킷 파일 일괄 복사 (~2분) ③ `.kit-config`에서 모드 선택 (Single/Two) ④ 팀원에게 해당 모드의 `2a/2b-MEMBER_SETUP.md` 공유 → 각자 `bootstrap.sh` 실행
 
-**이점**: 도입 총 ~20분, 팀원당 ~5분. 규칙이 코드로 강제되어 "구두 합의 → 형해화" 사이클 차단. SACHO 프로젝트에서 절차 검증 `[관찰]`.
+**이점**: `install.sh`로 도입 시간이 대폭 단축. 모드 선택으로 팀 상황에 맞는 브랜치 전략 적용 가능.
+
+---
+
+### 13.6 UC-6: Two-branch 모드에서 릴리스 동기화 `[가정]`
+
+- **Actor**: Tech Lead "주현" — Two-branch 모드 운영 중
+- **Trigger**: develop에 충분한 기능이 쌓여 릴리스 준비
+- **관련 FR**: FR-008
+
+**Flow**: ① `git sync-main` → develop→main PR 자동 생성 ② PR 리뷰 → squash merge ③ `git sync-main --tag v1.2.0` → 태그 PR 생성 (커밋 로그 포함) ④ main에서 `git tag v1.2.0 && git push --tags`
+
+**이점**: develop→main 동기화가 명시적인 PR 과정을 거쳐 리뷰 가능. `--tag` 옵션으로 릴리스 노트 자동 첨부. Git Flow의 복잡한 release 브랜치 없이 2-branch 릴리스 운영.
 
 ---
 
@@ -452,7 +570,7 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 | 단계 | 기간 | 핵심 감정 | 주요 활동 | 관련 UC |
 |------|------|-----------|-----------|---------|
-| Day 0 | 도입일 | 기대/약간 부담 | `bootstrap.sh` 실행, alias 등록 | UC-5 |
+| Day 0 | 도입일 | 기대/약간 부담 | `install.sh` + `bootstrap.sh` 실행, alias 등록 | UC-5 |
 | Day 1 | 첫 작업일 | 낯섦, 첫 마찰 | 첫 브랜치, 첫 commit 거부 경험 | UC-1 |
 | Week 1 | 1~7일 | 익숙함 | `git nb`/`git fb` 손에 익음 | UC-2 |
 | Month 1 | 8~30일 | 신뢰 | cleanup 루틴 정착, stale 알림 대응 | UC-3, UC-4 |
@@ -460,7 +578,7 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 ### 14.2 Day 0 — 도입
 
-관리자(UC-5)가 1회 세팅을 마치면, 팀원은 `bootstrap.sh` 한 번으로 gh·lefthook·alias·hooks를 일괄 설치한다. 이 단계의 마찰점은 **gh PATH 미갱신**(새 터미널 필요) 및 **gh auth login 1회 인증**이며, TROUBLESHOOTING.md에 대응 절차가 정리되어 있다.
+관리자(UC-5)가 `install.sh`로 1회 세팅을 마치면, 팀원은 `bootstrap.sh` 한 번으로 gh·lefthook·alias·hooks를 일괄 설치한다. 이 단계의 마찰점은 **gh PATH 미갱신**(새 터미널 필요) 및 **gh auth login 1회 인증**이며, TROUBLESHOOTING.md에 대응 절차가 정리되어 있다.
 
 ### 14.3 Day 1 — 첫 마찰
 
@@ -482,18 +600,18 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 ## 15. 에러 UX 및 메시지 정책 (Error UX Policy)
 
-킷 전체 7개 스크립트의 출력 메시지는 일관된 포맷·이모지·색상 규칙을 따른다. 본 섹션은 현재 구현 상태를 명문화하고, 표준화 원칙을 정의한다.
+킷 전체 11개 스크립트의 출력 메시지는 일관된 포맷·이모지·색상 규칙을 따른다. 본 섹션은 현재 구현 상태를 명문화하고, 표준화 원칙을 정의한다.
 
 ### 15.1 이모지 표준 (현재 사용)
 
-| 이모지 | 용도 | 사용 스크립트 수 | 예시 |
-|--------|------|-----------------|------|
-| ❌ | 에러/거부 | 7 / 7 | `❌ main 브랜치에 직접 push 금지.` |
-| ✅ | 성공/완료 | 7 / 7 | `✅ 브랜치명 OK` |
-| ⚠️ | 경고/주의 | 6 / 7 | `⚠️ 커밋되지 않은 변경 사항이 있습니다:` |
-| 🔍 | 검사/진행 | 5 / 7 | `🔍 환경 감지 중...` |
-| 📝 | 작업 진행 | 1 / 7 | `📝 PR 본문 채우는 중` |
-| ℹ️ | 정보/안내 | 1 / 7 | `ℹ️ 이미 현재 브랜치입니다` |
+| 이모지 | 용도 | 예시 |
+|--------|------|------|
+| ❌ | 에러/거부 | `❌ main 브랜치에 직접 push 금지.` |
+| ✅ | 성공/완료 | `✅ 브랜치명 OK` |
+| ⚠️ | 경고/주의 | `⚠️ 커밋되지 않은 변경 사항이 있습니다:` |
+| 🔍 | 검사/진행 | `🔍 환경 감지 중...` |
+| 📝 | 작업 진행 | `📝 PR 본문 채우는 중` |
+| ℹ️ | 정보/안내 | `ℹ️ 이미 현재 브랜치입니다` |
 
 ### 15.2 메시지 포맷 규칙
 
@@ -552,7 +670,7 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 ### 16.4 상태 추적 표준
 
-`bootstrap.sh`는 6개 `STATUS_*` 변수(GH/GH_AUTH/LEFTHOOK/HOOKS/ALIASES/GITATTRIBUTES)로 단계별 결과를 추적하고 `print_summary()`로 최종 표를 출력한다. 이 패턴을 7개 스크립트 전체로 일반화하여, 각 스크립트가 종료 시 "어느 단계에서 성공·실패·생략했는지"를 일관된 형식으로 출력한다 `[계획]`.
+`bootstrap.sh`는 6개 `STATUS_*` 변수(GH/GH_AUTH/LEFTHOOK/HOOKS/ALIASES/GITATTRIBUTES)로 단계별 결과를 추적하고 `print_summary()`로 최종 표를 출력한다. 이 패턴을 전체 스크립트로 일반화하여, 각 스크립트가 종료 시 "어느 단계에서 성공·실패·생략했는지"를 일관된 형식으로 출력한다 `[계획]`.
 
 ### 16.5 로그 정책
 
@@ -577,12 +695,12 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 | 7 | finish-branch | 다중 커밋 PR에서 `--fill-first`만 사용해 본문 불완전 | 중 |
 | 8 | cleanup-merged | `gh` 미인증 시 PR 머지 신호 검출 생략 (silent skip) | 중 |
 
-> **그 외 8건**: PR `synchronize` 트리거 누락, `.gitignore` 의도치 않은 ignore, winget 설치 후 PATH 갱신, lefthook 인라인 스크립트 mangle, 비-TTY 환경 인터랙티브 실패, branch protection rule 불일치, CI 워크플로우 권한, `git pull --ff-only` 충돌. 상세는 `TROUBLESHOOTING.md` 참조.
+> **그 외**: PR `synchronize` 트리거 누락, `.gitignore` 의도치 않은 ignore, winget 설치 후 PATH 갱신, lefthook 인라인 스크립트 mangle, 비-TTY 환경 인터랙티브 실패, branch protection rule 불일치, CI 워크플로우 권한, `git pull --ff-only` 충돌. 상세는 `TROUBLESHOOTING.md` 참조.
 
 ### 17.2 미처리 엣지 케이스
 
 - **네트워크 오류 시 재시도 없음** `[관찰]`: `new-branch.sh`의 `git pull` 실패 시 1줄 거부만, 재시도 로직 없음
-- **`gh` API rate limit 미처리** `[추론]`: `cleanup-merged.sh`가 PR 조회 시 rate limit에 걸리면 silent fail
+- **`gh` API rate limit 미처리** `[추론]`: `cleanup-merged.sh` signal 3의 per-branch 역방향 조회는 브랜치당 최대 1회 API 호출(캐시 히트 시 0회). 대량 로컬 브랜치 환경에서 rate limit 도달 시 `2>/dev/null || true`로 silent fail → false negative(건너뜀)로 안전측 수렴하나 사용자 경고 없음
 - **대용량 브랜치(>1000개)에서 fzf 성능** `[추론]`: `branch-move.sh`의 fzf 모드는 정렬 작업이 O(n), 1000+ 브랜치에서 응답 지연 가능
 - **비-TTY 환경 fallback 미구현** `[관찰]`: `new-branch.sh` 인터랙티브 모드는 비-TTY에서 즉시 거부, fallback 자동 전환 없음
 
@@ -602,25 +720,28 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 
 ### 18.1 현재 품질 상태 (As-Is)
 
-- **TODO/FIXME/HACK 주석**: 0건 (`grep` 검사 결과)
 - **자동화 테스트 코드**: 0개 (bats, shunit2 등 미사용)
-- **shellcheck baseline**: `[미확인]` — 도입 시 baseline 수립 필요
+- **정적 검사**: Kit-self CI 6개 워크플로우로 매 push 시 자동 검증 ✅
 - **Self-dogfooding**: 이 레포 자체가 자신의 킷을 적용 중 (메인 보호, lefthook, CI 모두 활성)
+- **불변식 검증**: `verify-invariant.sh`가 12곳 type 목록 일관성 자동 검증 ✅
 
-### 18.2 품질 보장 3축 모델
+### 18.2 품질 보장 4축 모델
 
-1. **정적 검사** — shellcheck, `bash -n`, yamllint, markdown lint
-2. **Self-Dogfooding** — 이 레포의 PR이 킷의 모든 규칙을 통과해야 머지됨
-3. **수동 체크리스트** — 릴리스 전 FR-001~007 정상/에러 경로 14항목 점검
+1. **정적 검사** — shellcheck, `bash -n`, yamllint, markdownlint, link check (Kit-self CI)
+2. **불변식 검증** — `verify-invariant.sh`로 12곳 type 동기화 자동 검증 (Kit-self CI)
+3. **Self-Dogfooding** — 이 레포의 PR이 킷의 모든 규칙을 통과해야 머지됨
+4. **수동 체크리스트** — 릴리스 전 FR-001~011 정상/에러 경로 점검
 
-### 18.3 정적 검사 도구 `[계획]`
+### 18.3 정적 검사 도구 (구현됨)
 
-| 도구 | 검사 대상 | 실행 시점 | 비고 |
-|------|----------|----------|------|
-| `shellcheck` | `scripts/*.sh` 7개 | 매 PR (CI) + 로컬 | severity ≥ warning baseline 적용 |
-| `bash -n` | `scripts/*.sh` 7개 | 매 PR (CI) | 문법만 검사 |
-| `yamllint` | `*.yml`, `lefthook.yml` | 매 PR (CI) | 들여쓰기/key 중복 |
-| markdown lint | `*.md` 8개 | 매 PR (CI) | link/heading 검증 |
+| 도구 | 검사 대상 | CI 워크플로우 | 비고 |
+|------|----------|--------------|------|
+| `shellcheck` | `scripts/*.sh` 11개 | `kit-ci-shellcheck.yml` | severity ≥ warning |
+| `bash -n` | `scripts/*.sh` 11개 | `kit-ci-bash-syntax.yml` | 문법만 검사 |
+| `yamllint` | `*.yml`, `lefthook.yml` | `kit-ci-yaml-lint.yml` | `.yamllint.yml` 설정 사용 |
+| `markdownlint-cli2` | `*.md` | `kit-ci-markdown-lint.yml` | `.markdownlint-cli2.jsonc` 설정 사용 |
+| `markdown-link-check` | `*.md` 내 링크 | `kit-ci-link-check.yml` | `.github/markdown-link-check.json` 설정 |
+| `verify-invariant.sh` | 12곳 type 목록 | `kit-ci-invariant.yml` | Tier A 필수 + Tier B 권고 |
 
 ### 18.4 Self-Dogfooding 정의
 
@@ -630,26 +751,23 @@ git cleanup                  # 5. 머지된 로컬 브랜치 정리
 - PR 제목 Conventional Commits(Tier 2)
 - commit-msg lefthook 통과(Tier 3)
 
-이는 "킷 저자가 자기 킷의 첫 번째 사용자"라는 1인 프로젝트 검증 전략이다. 외부 리뷰어가 없으므로 자동 검증이 유일한 게이트.
+이는 "킷 저자가 자기 킷의 첫 번째 사용자"라는 1인 프로젝트 검증 전략이다.
 
 **실측 사례: 이 레포 자체** `[관찰]`
 
-PRD 작성 시점 기준, branch-strategy-kit 레포 자체에 킷이 적용된 결과:
+PRD v1.1 작성 시점 기준, branch-strategy-kit 레포 자체에 킷이 적용된 결과:
 
 | 항목 | 값 |
 |------|------|
-| 총 PR 수 | 29건 (#1~#29, #7은 close 후 #6으로 재제출, 실제 머지 28건) |
-| 적용 기간 | 2026-04-07 ~ 2026-04-08 (약 2일, 초기 구축 burst) |
+| 총 PR 수 | 40건 (#1~#40) |
+| 적용 기간 | 2026-04-07 ~ 2026-04-13 |
 | 머지 전략 | 100% squash merge |
 | 브랜치명 규칙 위반 | 0건 (모든 브랜치가 `type/name` 정규식 통과) |
-| Type 분포 | feat 9 · docs 7 · fix 6 · chore 5 · remove 1 |
-| main 직접 push 차단 | lefthook + branch protection 작동 (위반 시도 0건 도달) |
-
-PR #7 → #6 재제출은 워크플로우의 정상 동작 사례다. 잘못된 커밋이 포함된 PR을 close 후 재작성한 것으로, "PR close 책임은 리뷰어"라는 `3-DAILY_WORKFLOW.md` 절차가 1인 검증 환경에서도 그대로 작동함을 보였다.
+| Kit-self CI 도입 | #38~#40으로 shellcheck, yamllint, invariant sync 자동화 |
 
 ### 18.5 수동 체크리스트 (릴리스 전)
 
-각 FR마다 **정상 경로 1개 + 에러 경로 1개** = 14항목.
+각 FR마다 **정상 경로 1개 + 에러 경로 1개**:
 
 - [ ] FR-001 bootstrap: 신규 환경 / 이미 설치된 환경
 - [ ] FR-002 new-branch: `git nb feat name` / 잘못된 type 거부
@@ -658,19 +776,10 @@ PR #7 → #6 재제출은 워크플로우의 정상 동작 사례다. 잘못된 
 - [ ] FR-005 check-branch: 정상 브랜치명 통과 / 위반 거부
 - [ ] FR-006 check-commit-msg: 정상 통과 / 형식 위반 거부
 - [ ] FR-007 branch-move: fzf 사용 가능 / fallback 번호 입력
-
-### 18.6 9곳 동기화 불변식 검증 `[계획]`
-
-§9의 불변식 위반 방지를 위해 `scripts/verify-invariant.sh` 신설 계획.
-
-```
-# 의사코드
-1. 9개 파일에서 type 목록 추출 (정규식/배열/표 형식별 파서)
-2. 모든 추출 결과를 set으로 정규화
-3. set이 단일하지 않으면 어느 파일이 어긋났는지 출력 후 exit 1
-```
-
-이 스크립트는 §19 `kit-ci-invariant.yml`에서 자동 호출되어 매 PR에서 검증.
+- [ ] FR-008 sync-main: Two-branch 정상 PR / Single-trunk 모드 가드 거부
+- [ ] FR-009 install: 정상 복사 / --dry-run 미리보기
+- [ ] FR-010 _config: DEFAULT_BRANCH=main / DEFAULT_BRANCH=develop
+- [ ] FR-011 verify-invariant: 12곳 일치 / 불일치 감지
 
 ---
 
@@ -680,43 +789,35 @@ PR #7 → #6 재제출은 워크플로우의 정상 동작 사례다. 잘못된 
 
 | 분류 | 정의 | 현황 |
 |------|------|------|
-| **User-facing CI** | 킷을 도입한 *사용자 프로젝트*의 워크플로우/PR을 검증 | 3개 워크플로우 (현행) |
-| **Kit-self CI** | *이 킷 레포 자체*의 코드 품질·문서·동기화를 검증 | 0개 (계획) |
+| **User-facing CI** | 킷을 도입한 *사용자 프로젝트*의 워크플로우/PR을 검증 | 3개 워크플로우 (AR-001~003) |
+| **Kit-self CI** | *이 킷 레포 자체*의 코드 품질·문서·동기화를 검증 | 6개 워크플로우 (AR-004~009) ✅ |
 
-§6은 User-facing CI만 다뤘다. §19는 Kit-self CI를 신설하는 계획이다.
-
-### 19.2 User-facing CI (현행 3개)
+### 19.2 User-facing CI (3개)
 
 | Workflow | 대상 | 역할 |
 |----------|------|------|
-| `branch-name-check.yml` | PR의 source branch | 사용자가 만든 브랜치명 정규식 준수 |
+| `branch-name-check.yml` | PR의 source branch | 사용자가 만든 브랜치명 정규식 준수. develop→main PR 예외 |
 | `pr-title-check.yml` | PR 제목 | Conventional Commits 형식 |
 | `stale-branches.yml` | 사용자 레포 전체 | 30일+ 비활성 브랜치 알림 |
 
 > 위 3개는 모두 *사용자 프로젝트* 자산이며, 이 레포에 동작하는 것은 self-dogfooding의 부산물이다.
 
-### 19.3 Kit-self CI (신설 계획) `[계획]`
+### 19.3 Kit-self CI (6개, 구현 완료)
 
-| 신규 Workflow 후보 | 검사 목적 | 트리거 |
-|-------------------|----------|--------|
-| `kit-ci-shellcheck.yml` | `scripts/*.sh` shellcheck 정적 분석 | PR + push |
-| `kit-ci-bash-syntax.yml` | `bash -n` 문법 검사 | PR + push |
-| `kit-ci-yaml-lint.yml` | `lefthook.yml`, `.github/workflows/*.yml` lint | PR + push |
-| `kit-ci-markdown-lint.yml` | `*.md` 8개 문서 lint | PR + push |
-| `kit-ci-link-check.yml` | README·가이드 내 상호 참조 링크 | weekly cron |
-| `kit-ci-invariant.yml` | §9 9곳 동기화 검증 (`verify-invariant.sh`) | PR + push |
+| Workflow | 검사 목적 | 트리거 | PR |
+|----------|----------|--------|----|
+| `kit-ci-shellcheck.yml` | `scripts/*.sh` shellcheck 정적 분석 | push | #38 |
+| `kit-ci-bash-syntax.yml` | `bash -n` 문법 검사 | push | #38 |
+| `kit-ci-yaml-lint.yml` | YAML 파일 lint | push | #39 |
+| `kit-ci-markdown-lint.yml` | 마크다운 lint | push | #39 |
+| `kit-ci-link-check.yml` | 마크다운 링크 유효성 | push | #39 |
+| `kit-ci-invariant.yml` | 12곳 동기화 검증 (`verify-invariant.sh`) | push | #40 |
 
-### 19.4 검사 항목 상세
-
-- **shellcheck**: severity ≥ warning을 baseline으로, 신규 위반만 차단 (legacy 호환)
-- **markdown lint**: heading 깊이, 링크 상태, 표 정합성 — 도구 선택 자유 (markdownlint-cli2 / mdl)
-- **invariant**: §9 표의 9개 파일에서 type 목록 추출 후 set 비교
-
-### 19.5 실행 환경
+### 19.4 실행 환경
 
 - 기본: `ubuntu-latest`
 - Windows 매트릭스 추가 여부 `[결정 필요]` — Git Bash 환경 호환성 회귀 방지를 위해 `windows-latest` 매트릭스 검토
-- 1인 프로젝트이므로 외부 리뷰어 게이트가 없어 CI가 유일한 자동 게이트. 따라서 Kit-self CI가 §18의 핵심 실행 메커니즘.
+- 1인 프로젝트이므로 외부 리뷰어 게이트가 없어 CI가 유일한 자동 게이트
 
 ---
 
@@ -732,14 +833,12 @@ PR #7 → #6 재제출은 워크플로우의 정상 동작 사례다. 잘못된 
 
 ### 20.2 현재 버전 현황
 
-- `VERSION` 파일: `1.0.0`
+- `VERSION` 파일: `1.0.0` (v1.1.0 릴리스 시 갱신 예정)
 - Git tag: `v1.0.0` (1개)
 - 라이선스: MIT
 - 도입 사례: SACHO 프로젝트 1건 (본격 작업 2026-05 시작 예정) `[관찰]`
 
 ### 20.3 Breaking Change 판정 기준
-
-본 표가 §20의 핵심이다. 모호한 판단을 줄이기 위해 사전 분류한다.
 
 | 변경 항목 | SemVer | 이유 |
 |----------|--------|------|
@@ -752,9 +851,10 @@ PR #7 → #6 재제출은 워크플로우의 정상 동작 사례다. 잘못된 
 | 에러 메시지 문구 변경 | PATCH | 기능 동일, 문구만 |
 | 이모지 변경 | PATCH | 의미 동일 |
 | 환경변수 이름 변경 | MAJOR | 외부 인터페이스 |
-| 9곳 동기화 위치 변경(파일 추가) | MINOR | 내부 구조 |
+| 12곳 동기화 위치 변경(파일 추가) | MINOR | 내부 구조 |
 | Git/gh/lefthook 최소 버전 상향 | MAJOR | 환경 요구 강화 |
 | TROUBLESHOOTING 항목 추가 | PATCH | 문서 보완 |
+| 운영 모드 추가 (Two-branch) | MINOR | 기존 Single-trunk 동작 유지, 새 옵션 추가 |
 
 ### 20.4 Tag 및 릴리스 프로세스
 
@@ -765,7 +865,7 @@ PR #7 → #6 재제출은 워크플로우의 정상 동작 사례다. 잘못된 
 
 ### 20.5 CHANGELOG 정책
 
-`CHANGELOG.md`는 [Keep a Changelog](https://keepachangelog.com) 형식을 따른다. v1.0.1 준비 과정에서 신설되었으며, v1.0.0 이후의 변경분은 `[Unreleased]` 섹션에 소급 정리되어 있다. 차기 릴리스 시 `[Unreleased]`의 내용을 새 버전 섹션(`[1.x.y] - YYYY-MM-DD`)으로 이동한다.
+`CHANGELOG.md`는 [Keep a Changelog](https://keepachangelog.com) 형식을 따른다. v1.0.0 릴리스 시 신설되었으며, 차기 릴리스 시 `[Unreleased]`의 내용을 새 버전 섹션(`[1.x.y] - YYYY-MM-DD`)으로 이동한다.
 
 ### 20.6 Deprecation 정책
 
@@ -785,7 +885,7 @@ PR #7 → #6 재제출은 워크플로우의 정상 동작 사례다. 잘못된 
 |----|------|------------|------|------|
 | T1 | 악의적 PR이 user-facing CI를 우회 | 외부 contributor | main 오염 | Tier 1(branch protection) + Tier 2(required check) |
 | T2 | 내부 사용자의 `--no-verify` 남용 | 팀원 | 로컬 검증 우회 | Tier 1+2가 서버에서 차단, 로컬 우회는 허용되지만 push 단계에서 거부 |
-| T3 | `bootstrap.sh` 변조 후 배포 | 킷 저장소 변조 | 팀원 환경 오염 | LICENSE/태그 검증, 사용자가 신뢰한 소스에서만 clone |
+| T3 | `bootstrap.sh` / `install.sh` 변조 후 배포 | 킷 저장소 변조 | 팀원 환경 오염 | LICENSE/태그 검증, 사용자가 신뢰한 소스에서만 clone |
 | T4 | 브랜치명에 셸 메타문자 injection | 외부 contributor | 스크립트 명령 주입 | 정규식 `^[a-z0-9][a-z0-9-]*$`가 셸 위험문자(`;`, `` ` ``, `$`, `..`) 차단 |
 | T5 | `gh` 토큰 유출 | 환경 침해 | 사용자 GitHub 권한 도용 | 킷은 토큰을 직접 읽거나 저장하지 않음. `gh` CLI에 위임 |
 | T6 | 핀 고정 안 된 GitHub Action 변조 | 액션 공급자 | CI 임의 코드 실행 | `@v5` 등 major tag 사용 중. SHA 핀 고정 검토 `[미확인 — 실태 확인 필요]` |
@@ -886,10 +986,10 @@ GitHub Actions 외부 액션 사용 현황 (`amannn/action-semantic-pull-request
 | 필드 | 내용 |
 |------|------|
 | 상태 | Accepted (v1.0.0 이전) |
-| 배경 | 7개 스크립트의 구현 언어 선택 |
+| 배경 | 스크립트의 구현 언어 선택 |
 | 검토된 대안 | (a) Node.js (b) Python (c) Go (d) bash |
 | 결정 | bash 4+ 채택 |
-| 근거 | 모든 OS의 git 환경에 기본 포함(Windows는 Git Bash). 추가 런타임 설치 불필요. 7개 스크립트가 전부 git/gh wrapper 수준이라 복잡한 언어 기능 불필요. dash/zsh 미지원은 §11.1 제약으로 수용 |
+| 근거 | 모든 OS의 git 환경에 기본 포함(Windows는 Git Bash). 추가 런타임 설치 불필요. 스크립트가 전부 git/gh wrapper 수준이라 복잡한 언어 기능 불필요. dash/zsh 미지원은 §11.1 제약으로 수용 |
 
 ### 23.3 ADR-003: Squash Merge 전일화
 
@@ -929,7 +1029,47 @@ GitHub Actions 외부 액션 사용 현황 (`amannn/action-semantic-pull-request
 | 배경 | lefthook.yml에 bash 검증 로직을 인라인으로 작성하면 Git Bash on Windows에서 큰따옴표/백슬래시가 mangle되어 정규식 검증 실패 |
 | 검토된 대안 | (a) lefthook.yml 인라인 스크립트 (b) `scripts/check-*.sh` 별도 파일 호출 (c) lefthook을 포기하고 git core.hooksPath 직접 |
 | 결정 | `bash scripts/check-*.sh <args>` 호출 패턴 강제 |
-| 근거 | 인라인은 Windows 사용자 환경에서 일관된 실패 발생. 별도 파일은 mangle 영향을 받지 않으며, 검증 로직 재사용성 향상. 1차 증거: `lefthook.yml:14` 및 `check-commit-msg.sh:8` NOTE 주석 |
+| 근거 | 인라인은 Windows 사용자 환경에서 일관된 실패 발생. 별도 파일은 mangle 영향을 받지 않으며, 검증 로직 재사용성 향상 |
+
+### 23.7 ADR-007: Two-branch 모드 도입 `[사후 기록]`
+
+| 필드 | 내용 |
+|------|------|
+| 상태 | Accepted (v1.1.0) |
+| 배경 | 일부 팀은 main을 릴리스 전용으로 유지하고 develop에서 통합하는 구조를 원함. §12 Roadmap에서 "높음" 우선순위로 계획됨 |
+| 검토된 대안 | (a) Git Flow 전체 도입 (b) develop/main 2-branch만 추가 (c) 미지원 유지 |
+| 결정 | `.kit-config` + `_config.sh`로 `DEFAULT_BRANCH` 전환하는 2-branch 모드 추가 |
+| 근거 | Git Flow는 release/hotfix 브랜치가 소규모 팀에게 과도. 2-branch는 최소 변경으로 develop/main 패턴을 지원. 기존 Single-trunk 모드는 완전히 유지되어 breaking change 없음 |
+
+### 23.8 ADR-008: install.sh 도입 `[사후 기록]`
+
+| 필드 | 내용 |
+|------|------|
+| 상태 | Accepted (v1.1.0) |
+| 배경 | 킷 도입 시 파일을 수동 복사하는 과정이 번거롭고 누락 가능성 있음 |
+| 검토된 대안 | (a) 수동 복사만 유지 (b) install.sh 복사 스크립트 (c) npm/brew 패키지 배포 |
+| 결정 | `install.sh` 복사 스크립트 도입 |
+| 근거 | npm/brew는 런타임 의존성 추가. install.sh는 bash만으로 파일 복사, diff 비교, 실행 권한 설정을 자동화. `--dry-run` 옵션으로 안전한 미리보기 제공 |
+
+### 23.9 ADR-009: 12곳 불변식 자동 검증 `[사후 기록]`
+
+| 필드 | 내용 |
+|------|------|
+| 상태 | Accepted (v1.1.0) |
+| 배경 | v1.0.0의 §9에서 9곳 동기화 불변식을 정의했으나 검증이 수동이었음. 문서 분리(2a/2b, 3a/3b)로 동기화 지점이 12곳으로 확대 |
+| 검토된 대안 | (a) 수동 체크리스트만 유지 (b) 단일 검증 스크립트 + CI (c) pre-commit 훅으로 로컬 검증 |
+| 결정 | `verify-invariant.sh` + `kit-ci-invariant.yml`로 CI 자동 검증 |
+| 근거 | 수동 검증은 누락 불가피. CI에서 매 push 시 자동 실행하여 불일치를 즉시 감지. Tier A(필수 7곳) / Tier B(권고 5곳) 분리로 문서 지연 허용 |
+
+### 23.10 ADR-010: signal 3 per-branch 역방향 조회 + headRefOid 검증 `[사후 기록]`
+
+| 필드 | 내용 |
+|------|------|
+| 상태 | Accepted (post-v1.1.0, `refactor/signal3-reverse-lookup`) |
+| 배경 | 기존 signal 3은 `gh pr list --state merged --limit 200 --json headRefName`로 머지된 PR의 head 이름을 **벌크 조회**한 뒤 로컬 브랜치와 교집합. 두 결함: (a) `--limit 200` 초과 시 과거 PR이 응답에서 누락되어 오래된 로컬 브랜치가 정리되지 않음 (b) 브랜치명만 매칭하므로 **1차 머지 후 같은 이름으로 새 작업 중인 브랜치**가 "머지된 PR"과 동명이라는 이유만으로 삭제 후보에 포함될 수 있음(오탐 삭제 위험) |
+| 검토된 대안 | (a) `--limit` 확대(500/1000) + 페이지네이션 (b) `gh pr list --search ...`로 필터 강화 (c) per-branch 역방향 조회(`--head <branch>`) + `headRefOid` SHA 정확 일치 검증 |
+| 결정 | (c) 채택. `is_pr_merged_for_branch(branch)` 함수로 캡슐화하고 `declare -A PR_MERGED_CACHE` associative array로 signal 3 루프와 `detect_reason()`의 GONE 분기 간 결과를 공유. 스크립트 레벨에서 **1회 선언**(재선언 시 리셋 리스크 제거). `detect_reason()` 표시 문구를 대칭화(`origin still alive` / `origin already gone`) |
+| 근거 | SHA 정확 일치는 브랜치명 재사용 오탐을 원천 차단(시나리오 4.3/4.7/4.8). `--head <branch>`는 브랜치당 독립 조회라 `--limit` 누락이 불가능하고 `headRefOid`까지 확보. 캐싱으로 최악의 경우에도 브랜치당 최대 1회 API 호출로 제한. gh 미설치/미인증·네트워크 실패·GC로 인한 객체 유실 등 모든 실패 경로가 false negative(건너뜀)로 수렴해 **의도치 않은 삭제 0건** 보장. 14개 시나리오 전수 트레이싱으로 안전성 검증 (`docs/design/signal3-design-v3-trace.md`, 로컬) |
 
 ---
 
@@ -939,10 +1079,10 @@ GitHub Actions 외부 액션 사용 현황 (`amannn/action-semantic-pull-request
 
 | 파일/요소 | 현재 언어 | 비고 |
 |----------|----------|------|
-| 사용자 문서(README, 가이드 5종) | 한국어 | SACHO 팀 한국어 화자 전제 |
+| 사용자 문서(README, 가이드 6종) | 한국어 | SACHO 팀 한국어 화자 전제 |
 | 코드/정규식/타입명 | 영어 | `feat`, `fix` 등 표준 |
 | 에러 메시지 | 한국어 + 이모지 | 검색성 위해 영문 키워드 일부 병기 |
-| `CLAUDE.md` | 한국어 | AI 가이드 |
+| `CLAUDE.md` | 한국어 | AI 가이드 (로컬 전용) |
 | LICENSE | 영어 | MIT 표준 |
 
 ### 24.2 영어 문서 작성 계획 `[계획]`
@@ -951,8 +1091,8 @@ GitHub Actions 외부 액션 사용 현황 (`amannn/action-semantic-pull-request
 
 1. `README_en.md` (가장 먼저, OSS 발견성)
 2. `1-ADMIN_SETUP_en.md`
-3. `2-MEMBER_SETUP_en.md`
-4. `3-DAILY_WORKFLOW_en.md`
+3. `2a-MEMBER_SETUP_SINGLE_en.md` / `2b-MEMBER_SETUP_TWO_en.md`
+4. `3a-DAILY_WORKFLOW_SINGLE_en.md` / `3b-DAILY_WORKFLOW_TWO_en.md`
 5. `TROUBLESHOOTING_en.md`
 
 기존 한국어 문서는 그대로 유지(주 사용자 한국어). 영어 문서는 한국어 문서의 직역이 아닌 동등 내용 재작성.
@@ -970,7 +1110,7 @@ GitHub Actions 외부 액션 사용 현황 (`amannn/action-semantic-pull-request
 
 ### 24.4 Roadmap 편입
 
-§12 Roadmap에 우선순위 **낮음**으로 편입한다. SACHO 팀이 본격 작업을 시작하는 2026-05까지는 한국어 사용자만 존재하므로 영어 문서 작성은 v1.x 후반 또는 v2.0 시점에 검토한다.
+§12 Roadmap에 우선순위 **낮음**으로 편입. SACHO 팀이 본격 작업을 시작하는 2026-05까지는 한국어 사용자만 존재하므로 영어 문서 작성은 v1.x 후반 또는 v2.0 시점에 검토한다.
 
 ---
 
@@ -1003,20 +1143,23 @@ GitHub Actions 외부 액션 사용 현황 (`amannn/action-semantic-pull-request
 |------|------|------|
 | `README.md` | 의사결정자/리더 | 전체 개요 + 가치 제안 |
 | `1-ADMIN_SETUP.md` | repo admin | 킷 1회 도입 가이드 (~15분) |
-| `2-MEMBER_SETUP.md` | 신규 팀원 | 로컬 환경 셋업 가이드 (~5분) |
-| `3-DAILY_WORKFLOW.md` | 모든 개발자 | 일상 워크플로우 레퍼런스 |
+| `2a-MEMBER_SETUP_SINGLE.md` | 신규 팀원 (Single-trunk) | 로컬 환경 셋업 가이드 (~5분) |
+| `2b-MEMBER_SETUP_TWO.md` | 신규 팀원 (Two-branch) | 로컬 환경 셋업 가이드 (~5분) |
+| `3a-DAILY_WORKFLOW_SINGLE.md` | 모든 개발자 (Single-trunk) | 일상 워크플로우 레퍼런스 |
+| `3b-DAILY_WORKFLOW_TWO.md` | 모든 개발자 (Two-branch) | 일상 워크플로우 레퍼런스 |
 | `TROUBLESHOOTING.md` | 문제 해결 | 에러 원인 + 해결책 |
 
 ### C. 분석 범위
 
-**분석 대상**: 프로젝트 루트의 전체 파일 (21개)
-- 셸 스크립트 7개 (`scripts/*.sh`)
-- GitHub Actions 워크플로우 3개 (`.github/workflows/*.yml`)
-- 설정 파일 4개 (`lefthook.yml`, `.gitattributes`, `.gitignore`, `.github/pull_request_template.md`)
-- 마크다운 문서 5개 (`README.md`, `1-ADMIN_SETUP.md`, `2-MEMBER_SETUP.md`, `3-DAILY_WORKFLOW.md`, `TROUBLESHOOTING.md`)
-- 기타 2개 (`LICENSE`, `CLAUDE.md`)
+**분석 대상**: 프로젝트 루트의 전체 파일 (52개)
+- 셸 스크립트 11개 (`install.sh` + `scripts/*.sh` 10개)
+- GitHub Actions 워크플로우 9개 (`.github/workflows/*.yml` — user-facing 3 + kit-self 6)
+- 설정 파일 7개 (`lefthook.yml`, `.gitattributes`, `.gitignore`, `.kit-config`, `.yamllint.yml`, `.markdownlint-cli2.jsonc`, `.github/markdown-link-check.json`)
+- 템플릿 1개 (`.github/pull_request_template.md`)
+- 마크다운 문서 6종 가이드 (`README.md`, `1-ADMIN_SETUP.md`, `2a/2b-MEMBER_SETUP.md`, `3a/3b-DAILY_WORKFLOW.md`, `TROUBLESHOOTING.md`)
+- 기타 (`LICENSE`, `VERSION`, `CHANGELOG.md`, `PRD-v1.0.0.md`, `KITPROCESS.md`)
 
-**제외 대상**: `.git/` 디렉토리, `CLAUDE.md` (로컬 전용, gitignore 대상)
+**제외 대상**: `.git/` 디렉토리, `CLAUDE.md` (로컬 전용, gitignore 대상), `docs/` (설계/연구 문서, gitignore 대상)
 
 ### D. 용어집 (Glossary)
 
@@ -1027,7 +1170,7 @@ GitHub Actions 외부 액션 사용 현황 (`amannn/action-semantic-pull-request
 | 용어 | 정의 | 이 킷에서의 의미 | 관련 § |
 |------|------|----------------|--------|
 | Squash Merge | PR의 모든 커밋을 1개로 압축해 main에 합치는 머지 전략 | 유일하게 허용되는 머지 전략 (§4 원칙 3) | §4, §20.3, ADR-003 |
-| Trunk | 단일 영구 브랜치 (보통 main) | 본 킷은 main 단일 trunk만 인정 | §4 |
+| Trunk | 단일 영구 브랜치 (보통 main) | Single-trunk: main / Two-branch: develop이 통합 브랜치, main이 릴리스 브랜치 | §4 |
 | Linear History | merge commit 없이 일직선으로 이어지는 git history | branch protection의 `Require linear history`로 강제 | §4, §6.1 |
 | GitHub Flow | main + 단명 작업 브랜치 + PR 기반의 워크플로우 모델 | 본 킷이 채택한 전략 | §4 |
 | Branch Protection | GitHub의 브랜치 단위 정책 (push/머지 제약) | Tier 1 방어선 | §6.1, §21.5 |
@@ -1039,20 +1182,26 @@ GitHub Actions 외부 액션 사용 현황 (`amannn/action-semantic-pull-request
 
 | 용어 | 정의 | 이 킷에서의 의미 | 관련 § |
 |------|------|----------------|--------|
-| lefthook | Go 기반 Git 훅 매니저 | Tier 3 클라이언트 훅 실행기 | §6.3, ADR-001 |
+| lefthook | Go 기반 Git 훅 매니저 | Tier 3 클라이언트 훅 실행기 | §6.4, ADR-001 |
 | `gh` CLI | GitHub 공식 명령행 도구 | PR 생성/조회 자동화의 기반 | FR-003, ADR-005 |
 | fzf | 터미널 fuzzy finder | `branch-move.sh`의 선택 UI (선택적) | FR-007 |
 | shellcheck | 셸 스크립트 정적 분석기 | Kit-self CI의 핵심 검사 | §18.3, §19.3 |
 | `bash -n` | bash 문법 체크 모드 | 스크립트 변경 후 필수 검사 | §18.3 |
+| yamllint | YAML 파일 린터 | Kit-self CI에서 워크플로우/설정 파일 검증 | §18.3, AR-006 |
+| markdownlint-cli2 | 마크다운 린터 | Kit-self CI에서 문서 포맷 검증 | §18.3, AR-008 |
 
 #### D.3 이 킷 고유 용어
 
 | 용어 | 정의 | 이 킷에서의 의미 | 관련 § |
 |------|------|----------------|--------|
 | 3계층 방어선 | 서버(branch protection) → CI(Actions) → 클라이언트(lefthook)의 3단 검증 구조 | 본 킷의 핵심 아키텍처 | §4, §6.1, §21.5 |
-| 9곳 동기화 불변식 | type 목록·정규식이 9개 파일에 중복 정의되어 동기화가 강제됨 | 가장 중요한 일관성 규칙 | §9, §18.6, §19.3 |
+| 12곳 동기화 불변식 | type 목록·정규식이 12개 파일에 중복 정의되어 동기화가 강제됨 | 가장 중요한 일관성 규칙. `verify-invariant.sh`로 자동 검증 | §9, §18.3, AR-007 |
 | Self-Dogfooding | 킷 저장소 자체가 자기 킷의 규칙을 따름 | 1인 프로젝트의 검증 전략 | §18.4 |
 | Idempotent Bootstrap | `bootstrap.sh`를 여러 번 실행해도 동일 결과 | 사용자 안전성 보장 | FR-001 |
-| User-facing CI | 킷이 도입된 사용자 프로젝트를 검증하는 워크플로우 | 현재 3개 (branch-name/pr-title/stale) | §19.1, §19.2 |
-| Kit-self CI | 이 킷 레포 자체의 품질을 검증하는 워크플로우 | 0개 (계획) | §19.1, §19.3 |
+| User-facing CI | 킷이 도입된 사용자 프로젝트를 검증하는 워크플로우 | 3개 (branch-name/pr-title/stale) | §19.1, §19.2 |
+| Kit-self CI | 이 킷 레포 자체의 품질을 검증하는 워크플로우 | 6개 (shellcheck/bash-syntax/yaml-lint/markdown-lint/link-check/invariant) | §19.1, §19.3 |
 | type 8종 | feat/fix/refactor/docs/research/data/chore/remove | 브랜치·커밋·PR 모두 동일 8종 사용 | §9, ADR-004 |
+| Single-trunk 모드 | `DEFAULT_BRANCH=main` — main 단일 trunk 운영 | v1.0.0 기본 모드 | §4, FR-010 |
+| Two-branch 모드 | `DEFAULT_BRANCH=develop` — develop(통합) + main(릴리스) 이중 브랜치 | v1.1.0 신규. `sync-main.sh`로 릴리스 동기화 | §4, FR-008, ADR-007 |
+| `.kit-config` | 킷 설정 파일 (`DEFAULT_BRANCH` 정의) | 모드 전환의 단일 진입점 | FR-010 |
+| `install.sh` | 킷 파일 일괄 복사 스크립트 | 관리자 도입 간소화 | FR-009, ADR-008 |

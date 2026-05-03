@@ -51,16 +51,20 @@ git pull origin develop
 ./scripts/bootstrap.sh
 ```
 
-이 스크립트가 자동으로 처리하는 것:
+<details>
+<summary>스크립트가 자동으로 처리하는 것</summary>
 - `gh` (GitHub CLI) 설치 여부 확인 및 설치
 - `lefthook` 설치 여부 확인 및 설치
 - `lefthook install` 실행 (git hook 등록)
 - `.gitattributes` 점검 (누락 또는 핵심 `eol=lf` 규칙 누락 시 경고)
 - Git alias 5개 등록 (`git nb`, `git fb`, `git cleanup`, `git bootstrap`, `git sync-main`)
+</details>
 
+---
 > 💡 여러 번 실행해도 안전합니다 (idempotent).
 >
 > ⚠️ **Linux 사용자**: bootstrap이 `gh`/`lefthook`을 설치할 때 `sudo dnf install ...`처럼 sudo 명령을 호출할 수 있습니다. 비밀번호 입력이 필요할 수 있으니 비대화형 환경(SSH 자동화 등)에서 실행 시 주의하세요.
+---
 
 ### 3. GitHub CLI 인증
 
