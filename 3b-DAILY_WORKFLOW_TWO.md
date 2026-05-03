@@ -174,19 +174,21 @@ git cleanup
 **예시 출력 (검출 사유가 inline으로 표시됨):**
 
 ```
+🔍 원격 정보 최신화 중...
 🔍 develop 브랜치 최신화 중...
 🔍 원격 추적 정보 정리 중 (git fetch -p)...
 🔍 GitHub PR 상태 확인 중 (gh)...
 
 다음 브랜치들이 삭제됩니다:
   feat/order-router          (merged)
-  fix/websocket-reconnect    (PR merged on GitHub)
-  refactor/api-cleanup       (gone from remote)
+  fix/websocket-reconnect    (PR merged on GitHub — origin already gone)
+  refactor/api-cleanup       (PR merged on GitHub — origin still alive)
 
 진행하시겠습니까? [y/N]: y
 ✅ feat/order-router 삭제 완료 (merged)
-✅ fix/websocket-reconnect 삭제 완료 (PR merged on GitHub)
-✅ refactor/api-cleanup 삭제 완료 (gone from remote)
+✅ fix/websocket-reconnect 삭제 완료 (gone from remote)
+   🌐 원격 브랜치도 삭제: origin/refactor/api-cleanup
+✅ refactor/api-cleanup 삭제 완료 (PR merged on GitHub)
 ```
 
 `--exclude`로 일부를 제외한 경우 별도 섹션으로 안내됩니다:
@@ -206,10 +208,11 @@ git cleanup
 | 태그 | 의미 |
 |---|---|
 | `(merged)` | 일반 merge commit으로 develop에 흡수됨 (`git branch --merged develop` 으로 감지) |
-| `(gone from remote)` | 원격 브랜치가 사라진 신호. 일반적으로 PR squash merge + GitHub auto-delete head branches 설정이 동작한 결과 |
-| `(PR merged on GitHub)` | `gh pr list --state merged`로 감지. `gh` CLI 필수. auto-delete가 동작하지 않은 케이스 보정 |
+| `(PR merged on GitHub — origin already gone)` | squash merge + GitHub auto-delete로 원격이 이미 삭제된 케이스. `gh pr list --head <branch>`로 감지. 가장 흔한 케이스 |
+| `(PR merged on GitHub — origin still alive)` | PR은 머지됐으나 원격 브랜치가 아직 살아있는 케이스. `git cleanup`이 원격 브랜치도 함께 삭제 |
+| `(⚠️  gone from remote (PR not merged))` | 원격 브랜치가 사라졌으나 머지된 PR을 찾지 못한 케이스. `gh` 미설치/미인증 시에도 이 태그로 표시 |
 
-> `gh` CLI가 미설치/미인증이면 `(merged)` + `(gone from remote)` 두 종류만 정리됩니다.
+> `gh` CLI가 미설치/미인증이면 `(merged)` + `(⚠️  gone from remote (PR not merged))` 두 종류만 정리됩니다.
 
 ---
 
