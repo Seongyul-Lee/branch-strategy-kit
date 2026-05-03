@@ -1,5 +1,7 @@
 # Changelog
 
+> **기술적 변경 로그입니다.** PR·커밋 단위의 세부 변경을 추적합니다. 버전별 사용자용 요약은 [`RELEASE_NOTES.md`](RELEASE_NOTES.md)를 보세요.
+
 본 킷의 모든 주요 변경사항은 이 파일에 기록된다.
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)을 따르며,
@@ -14,6 +16,11 @@
 - **Security** — 보안 관련 수정
 
 ## [Unreleased]
+
+### Fixed
+- `install.sh` — 클린 체크아웃 직후 실행 시 `Permission denied` 발생. 파일에 실행 권한(+x) 부여 (#49)
+- `verify-invariant.sh` — README 일관성 검사를 Tier A(필수)에서 Tier B(권장)로 이동.
+  `install.sh`가 README를 복사하지 않아 다운스트림에서 항상 실패하던 모순 해결 (#48)
 
 ## [1.1.1] - 2026-04-29
 
@@ -49,7 +56,7 @@
 - Kit-self CI: ShellCheck + bash syntax check (#38)
 - Kit-self CI: YAML lint, markdown lint, link check (#39)
 - `scripts/verify-invariant.sh` + `kit-ci-invariant.yml` — 12곳 type 목록 일관성 자동 검증 (#40)
-- `PRD-v1.1.md` — v1.1.0 Product Requirements Document, ADR-010 포함 (#41, #43)
+- `PRD-v1.1.0.md` — v1.1.0 Product Requirements Document, ADR-010 포함 (#41, #43)
 
 ### Changed
 - `README.md` 개선 (#24)
@@ -66,7 +73,7 @@
 - `1-ADMIN_SETUP.md` Step 2-1에 파일 복사 통합, Step 3 재구성 (#36)
 - 문서 분리: `2-MEMBER_SETUP` → `2a`(Single) + `2b`(Two),
   `3-DAILY_WORKFLOW` → `3a`(Single) + `3b`(Two) (#35)
-- `PRD.md` → `PRD-v1.0.md` rename (#41)
+- `PRD.md` → `PRD-v1.0.0.md` rename (#41)
 - `cleanup-merged.sh` signal 3 재설계 — 기존 `gh pr list --state merged` 벌크 조회를
   `--head <branch>` per-branch 역방향 조회 + `headRefOid` SHA 정확 일치 검증으로 전환.
   브랜치명 재사용(1차 머지 후 같은 이름 재생성) 오탐 차단, `PR_MERGED_CACHE` associative
@@ -81,15 +88,32 @@
 ## [1.0.0] - 2026-04-08
 
 ### Added
-- 초기 릴리스: 브랜치 전략 킷 (스크립트 + lefthook + GitHub Actions + 문서 + PR 템플릿)
-- 브랜치 네이밍 규칙: `^(feat|fix|refactor|docs|research|data|chore|remove)/[a-z0-9][a-z0-9-]*$`
-- 스크립트: `bootstrap.sh`, `new-branch.sh`, `finish-branch.sh`, `cleanup-merged.sh`,
-  `branch-move.sh`, `check-branch.sh`, `check-commit-msg.sh`
-- GitHub Actions: `branch-name-check.yml`, `pr-title-check.yml`, `stale-branches.yml`
-- lefthook 훅(pre-push, commit-msg) 구성
-- Git alias 4종(`nb`, `fb`, `cleanup`, `bm`) 자동 등록
-- 가이드 문서: `README.md`, `1-ADMIN_SETUP.md`, `2-MEMBER_SETUP.md`,
-  `3-DAILY_WORKFLOW.md`, `TROUBLESHOOTING.md`
+- 초기 구성: 브랜치 전략 킷 스캐폴딩 — 스크립트·lefthook·GitHub Actions·문서·PR 템플릿 (#0)
+- `bootstrap.sh` — 의존성·lefthook·git alias 일괄 등록 원스텝 설치 스크립트 (#1)
+- `new-branch.sh` 인터랙티브 모드 — 화살표 키로 브랜치 type 선택 (#6)
+- `cleanup-merged.sh` — GitHub PR 상태 확인으로 머지 감지 정확도 향상 (#8)
+- `bootstrap.sh` — git alias 4종(`nb`, `fb`, `cleanup`, `bm`) 자동 등록 (#10)
+- `bootstrap.sh` — GitHub auth 상태 advisory 체크 추가 (#17)
+- `remove` 브랜치 type 추가 및 한글 커밋 메시지 공식 지원 (#18)
+- `cleanup-merged.sh` — 감지 이유 인라인 표시 + `--exclude` 옵션 추가 (#19)
+- PR 거절 워크플로우 및 reviewer-closes-PR 규칙 문서화 (#20)
+- `LICENSE` (MIT) 추가 (#21)
+- `finish-branch.sh` — `--no-pr` 플래그 추가 (push만 하고 PR 생성 건너뜀) (#22)
+
+### Changed
+- 가이드 문서 구조 재편 — 설치·설계 중심에서 사용자 워크플로우 중심으로 재구성 (#9, #13, #14)
+- 독립형 레포 관리자용 Require approvals 0 설정 경고 문서 추가 (#4)
+
+### Fixed
+- `finish-branch.sh` — 멀티 커밋 PR 제목 생성에 `--fill-first` 적용 (#3)
+- `pr-title-check.yml` — `synchronize` 이벤트 트리거 누락 추가 (#5)
+- `scripts/*.sh` — git index에 실행 권한(+x) 설정 (#11)
+- `.gitattributes` — CRLF/LF 정규화 갭 수정 및 `bootstrap.sh` 동기화 (#12)
+- 어드민 셋업 가이드 — §2-3, §3-2에 로컬 브랜치 정리 단계 추가 (#15)
+- 멤버 셋업 가이드 Step 1 — clone + update 양쪽 경로 모두 커버 (#16)
+
+### Removed
+- `test.txt` — 워크플로우 스모크 테스트용 임시 파일 삭제 (#23)
 
 [Unreleased]: https://github.com/Seongyul-Lee/branch-strategy-kit/compare/v1.1.1...HEAD
 [1.1.1]: https://github.com/Seongyul-Lee/branch-strategy-kit/releases/tag/v1.1.1
